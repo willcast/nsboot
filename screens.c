@@ -55,11 +55,11 @@ void main_menu(void) {
 		if (in_box(16, 128, 160, 88)) {
 			status("have a nice day");
 			quit = 1;
-		} else if (in_box(192, 128, 340, 88) && confirm()) {
+		} else if (in_box(192, 128, 340, 88) && confirm("power off")) {
 			status("powering off...");
 			sync();
 			reboot(RB_POWER_OFF);
-		} else if (in_box(548, 128, 232, 88) && confirm()) {
+		} else if (in_box(548, 128, 232, 88) && confirm("reboot")) {
 			status("rebooting...");
 			sync();
 			reboot(RB_AUTOBOOT);
@@ -81,6 +81,7 @@ void installer_menu(void) {
 	int ret = 0;
 	char *filename, *lv, *lv_set;
 	int flags;
+	long size;
 
 	while (!ret) {
 		clear_screen();
@@ -107,32 +108,39 @@ void installer_menu(void) {
 			filename = select_file(EXT, ".zip");
 			if (filename == NULL) continue;
 			flags = android_options();
-			if (confirm()) install_android(filename, NULL, flags);
+			if (confirm("install Android"))
+                                install_android(filename, NULL, flags);
 		} else if (in_box(16, 282, 644, 52)) {
 			filename = select_file(EXT, ".zip");
 			if (filename == NULL) continue;
 			lv_set = select_lv_set();
 			if (lv_set == NULL) continue;
 			flags = android_options();
-			if (confirm()) install_android(filename, lv_set, flags);
+			if (confirm("install Android"))
+                                install_android(filename, lv_set, flags);
 		} else if (in_box(16, 350, 537, 52)) {
 			filename = select_file(EXT, ".gz");
 			if (filename == NULL) continue;
-			if (confirm()) install_native(filename, NULL);
+                        size = size_screen(1728, 8192, 256);
+			if (confirm("install native Linux"))
+                                install_native(filename, NULL, size);
 		} else if (in_box(16, 418, 628, 52)) {
 			filename = select_file(EXT, ".gz");
 			if (filename == NULL) continue;
 			lv = select_lv(1);
 			if (lv == NULL) continue;
-			if (confirm()) install_native(filename, lv);
+			if (confirm("install native Linux"))
+                                install_native(filename, lv, 0);
 		} else if (in_box(16, 486, 718, 52)) {
 			filename = select_file(BASE, "uImage.");
 			if (filename == NULL) continue;
-			if (confirm()) install_uimage(filename);
+			if (confirm("install uImage"))
+                                install_uimage(filename);
 		} else if (in_box(16, 554, 682, 52)) {
 			filename = select_file(EXT, ".tar");
 			if (filename == NULL) continue;
-			if (confirm()) install_tar(filename);
+			if (confirm("install kexec .tar"))
+                                install_tar(filename);
 		}
 	}
 }
@@ -171,13 +179,13 @@ void util_menu(void) {
 		else if (in_box(16, 214, 250, 52)) {
 			lv = select_lv(1);
 			if (lv == NULL) continue;
-			if (confirm()) delete_lv(lv);
+			if (confirm("delete volume")) delete_lv(lv);
 		} else if (in_box(282, 214, 322, 52)) {
 			lv_set = select_lv_set();
 			if (lv_set == NULL) continue;
-			if (confirm()) delete_lv_set(lv_set);
+			if (confirm("delete volume set")) delete_lv_set(lv_set);
 		} else if (in_box(620, 214, 358, 52)) {
-			if (confirm()) resize_media(0);
+			if (confirm("reclaim media space")) resize_media(0);
 		} else if (in_box(16, 282, 322, 52)) {
 			free_boot_items();
 			scan_boot_lvs();
@@ -188,11 +196,11 @@ void util_menu(void) {
 		else if (in_box(16, 350, 250, 52)) {
 			lv = select_lv(1);
 			if (lv == NULL) continue;
-			if (confirm()) wipe_lv(lv);
+			if (confirm("format volume")) wipe_lv(lv);
 		} else if (in_box(282, 350, 322, 52)) {
 			lv_set = select_lv_set();
 			if (lv_set == NULL) continue;
-			if (confirm()) wipe_lv_set(lv_set);
+			if (confirm("format volume set")) wipe_lv_set(lv_set);
 		} else if (in_box(620, 350, 268, 52))
 			umount_lv(select_lv(0));
 	}
@@ -421,21 +429,22 @@ char * select_lv_set(void) {
 	return selected_set;
 }
 
-// 0 for true, 1 for false
-int confirm(void) {
+// 0 for false, 1 for true
+int confirm(const char *label) {
 	int ret = -1;
 	int ts_x, ts_y;
 
 	clear_screen();
-	text("are you sure?", 16, 16, 5, 5, 0xFFC0C0C0, 0x00000000);
+	text("are you sure you want to:", 16,16, 4,4, 0xFFC0C0C0, 0x00000000);
+	text(label, 16,104, 2,2, 0xFF808080, 0x00000000);
 
-	text_box("yes", 16,120, 151,106, 5, 0xFFFFFFFF,0xFF00FF00,0xFFFFFFFF);
-	text_box("no", 16,287, 106,106, 5, 0xFFFFFFFF,0xFFFF0000,0xFFFFFFFF);
+	text_box("yes", 16,208, 151,106, 5, 0xFFFFFFFF,0xFF00FF00,0xFFFFFFFF);
+	text_box("no", 16,340, 106,106, 5, 0xFFFFFFFF,0xFFFF0000,0xFFFFFFFF);
 
 	while (ret == -1) {
 		ts_read(&ts_x, &ts_y);
-		if (in_box(16, 120, 151, 106)) ret = 1;
-		else if (in_box(16, 287, 106, 106)) ret = 0;
+		if (in_box(16, 208, 151, 106)) ret = 1;
+		else if (in_box(16, 340, 106, 106)) ret = 0;
 	}
 	return ret;
 }
@@ -548,7 +557,6 @@ void info_screen(void) {
 		text(date_str, 16,156, 2,2, 0xFF808080, 0xFF000000);
 		text("touch to update", 16,198, 2,2, 0xFF808080, 0xFF000000);
 
-
 		text_box("back", 16,282, 160,70, 3, 0xFFFFFFFF,0xFF808080,0xFFFFFFFF);
 
 		ts_read(&ts_x, &ts_y);
@@ -557,3 +565,34 @@ void info_screen(void) {
 	}
 }
 
+long size_screen(long min, long max, int step) {
+	int ts_x, ts_y;
+	int ret = 0;
+	long size;
+	char size_str[64];
+
+	size = min;
+
+	while (!ret) {
+		clear_screen();
+
+		snprintf(size_str, sizeof(size_str), "size: %ld MiB", size);
+
+		text("select volume size", 16,16, 4,4, 0xFFFFFFFF,0xFF000000);
+		text(size_str, 16,104, 2,2, 0xFF808080, 0xFF000000);
+
+		text_box("okay", 16,156, 160,70, 3, 0xFFFFFFFF,0xFF808080,0xFFFFFFFF);
+		text_box("decrease", 16,242, 232,70, 3, 0xFF000000,0xFFFFFFFF,0xFF000000);
+		text_box("increase", 264,242, 232,70, 3, 0xFF000000,0xFFFFFFFF,0xFF000000);
+
+		ts_read(&ts_x, &ts_y);
+
+		if (in_box(16, 156, 160, 70)) ret = 1;
+		else if (in_box(16, 242, 232, 70) && (size - step >= min))
+			size -= step;
+		else if (in_box(264, 242, 232, 70) && (size + step <= max))
+			size += step;
+	}
+
+	return size;
+}

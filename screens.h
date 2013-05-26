@@ -31,7 +31,8 @@ char * select_file(enum filter_spec, char *);
 char * select_lv(int);
 char * select_lv_set(void);
 
-int confirm(void);
+int confirm(const char *);
+long size_screen(long, long, int);
 
 int android_options(void);
 

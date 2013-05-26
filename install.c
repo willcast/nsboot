@@ -206,25 +206,28 @@ void mount_lv_set(const char *base) {
 		stperror("can't mount cache volume");
 }
 
-void install_native(const char *tarname, const char *lv) {
+void install_native(const char *tarname, const char *lv, int size) {
 	char cmd[PATH_MAX];
 	int code;
 
-	stprintf("installing new native Linux distro to %s", lv); 
+	stprintf("installing new native Linux distro to %s", lv);
 
 	if (lv == NULL) lv = deduce_lv(tarname);
 
 	if (!lv_exists(lv))
-		new_lv(lv, 3072);
+		new_lv(lv, size);
 
 	if (is_lv_mounted(lv))
 		umount_lv(lv);
 
 	wipe_lv(lv);
-
 	mount_lv(lv);
 
-	sprintf(cmd, "tar -xzpf %s -C /mnt/%s", tarname, lv);
+	sprintf(cmd, "/mnt/%s", lv);
+	if (chdir(cmd) == -1)
+		stperror("can't chdir into target root");
+
+	sprintf(cmd, "tar -xzpf %s", tarname, lv);
 	status("extracting .tar.gz file, this may take 10+ minutes");
 	if (code = WEXITSTATUS(system(cmd)))
 		steprintf("extraction failed with exit code %d", code);

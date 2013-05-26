@@ -123,7 +123,7 @@ int load_font(char *fname) {
 	return 0;
 }
 
-void text(char *str, int x, int y, int zx, int zy, uint32_t fgc, uint32_t bgc) {
+void text(const char *str, int x, int y, int zx, int zy, uint32_t fgc, uint32_t bgc) {
 	int len = strlen(str);
 	int ox = 0, oy = 0;
 

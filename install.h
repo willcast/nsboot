@@ -46,7 +46,7 @@ void new_lv_set(const char *, int, int, int);
 void wipe_lv_set(const char *);
 void delete_lv_set(const char *);
 
-void install_native(const char *, const char *);
+void install_native(const char *, const char *, int);
 void install_android(const char *, const char *, int);
 void install_uimage(char *);
 void install_tar(char *);

@@ -38,7 +38,7 @@ void hline(int, int, int, uint32_t);
 void vline(int, int, int, uint32_t);
 void rect(int, int, int, int, uint32_t);
 void fill_rect(int, int, int, int, uint32_t);
-void text(char *, int, int, int, int, uint32_t, uint32_t);
+void text(const char *, int, int, int, int, uint32_t, uint32_t);
 
 // UI functions
 void text_box(char *, int, int, int, int, int, uint32_t, uint32_t, uint32_t);
