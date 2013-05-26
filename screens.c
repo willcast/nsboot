@@ -33,6 +33,28 @@ extern int menu_size;
 #include <stdlib.h>
 #include <sys/reboot.h>
 
+const char keyboard[4][4][14][2] = { {
+	{ "`","1","2","3","4","5","6","7","8","9","0","-","=","\\" },
+	{ "", "q","w","e","r","t","y","u","i","o","p","[","]", ""  },
+	{ "", "a","s","d","f","g","h","j","k","l",";","'", "", ""  },
+ 	{ "", "z","x","c","v","b","n","m",",",".","/", "", "", ""  }
+}, {
+	{ "~","!","#","@","$","%","^","&","*","(",")","_","+","|" },
+	{ "", "Q","W","E","R","T","Y","U","I","O","P","{","}",""  },
+	{ "", "A","S","D","F","G","H","J","K","L",":","\"","",""  },
+	{ "", "Z","X","C","V","B","N","M","<",">","?", "", "",""  }
+}, {
+	{ "`","1","2","3","4","5","6","7","8","9","0","-","=","\\" },
+	{ "", "Q","W","E","R","T","Y","U","I","O","P","[","]",""   },
+	{ "", "A","S","D","F","G","H","J","K","L",";","'","", ""   },
+	{ "", "Z","X","C","V","B","N","M",",",".","/", "", "",""   }
+}, {
+	{ "~","!","#","@","$","%","^","&","*","(",")","_","+","|" },
+	{ "", "q","w","e","r","t","y","u","i","o","p","{","}", ""  },
+	{ "", "a","s","d","f","g","h","j","k","l",":","\"", "", ""  },
+ 	{ "", "z","x","c","v","b","n","m","<",">","?", "", "", ""  }
+} };
+
 void main_menu(void) {
 	int ts_x, ts_y;
 	int quit = 0;
@@ -148,7 +170,7 @@ void installer_menu(void) {
 void util_menu(void) {
 	int ts_x, ts_y;
 	int ret = 0;
-	char *lv, *lv_set;
+	char *bname, *lv, *lv_set;
 
 	while (!ret) {
 		clear_screen();
@@ -173,6 +195,8 @@ void util_menu(void) {
 			0xFFFFFFFF,0xFFFF0000,0xFFFFFFFF);
 		text_box("unmount volume", 620,350, 268,52, 2,
 			0xFFFFFFFF,0xFF808080,0xFFFFFFFF);
+		text_box("create volume tarchive", 16,418, 412,52, 2,
+			0xFFFFFFFF,0xFF0000FF,0xFFFFFFFF);
 
 		ts_read(&ts_x, &ts_y);
 		if (in_box(16, 128, 124, 70)) ret = 1;
@@ -203,6 +227,13 @@ void util_menu(void) {
 			if (confirm("format volume set")) wipe_lv_set(lv_set);
 		} else if (in_box(620, 350, 268, 52))
 			umount_lv(select_lv(0));
+		else if (in_box(16, 418, 415, 52)) {
+			 lv = select_lv(0);
+			 if (lv == NULL) continue;
+			 bname = text_input("Enter the name for your backup:");
+			 if (bname == NULL) continue;
+			 if (confirm("backing up takes > 5 min")) lv_to_tgz(lv, bname);
+		}
 	}
 }
 
@@ -595,4 +626,72 @@ long size_screen(long min, long max, int step) {
 	}
 
 	return size;
+}
+
+char * text_input(const char *prompt) {
+	int ts_x, ts_y;
+	int done = 0;
+	char *output;
+	int cur_ch = 0, shift = 0, caps = 0, n;
+
+	output = malloc(128 * sizeof(char));;
+	if (output == NULL) {
+		stperror("can't allocate textbuf");
+		return NULL;
+	}
+	memset(output, '\0', 128 * sizeof(char));
+
+	while (!done) {
+		n = shift + caps*2;
+		if (cur_ch > 126) cur_ch = 126;
+		clear_screen();
+
+		text(prompt, 16,16, 2,2, 0xFFFFFFFF, 0xFF000000);
+		text(output, 0,68, 1,1, 0xFF808080, 0xFF000000);
+
+		for (int y = 0; y < 4; ++y) for (int x = 0; x < 14; ++x)
+			if (keyboard[n][y][x][0] != '\0')
+				text_box(keyboard[n][y][x], 16+64*x,384+64*y, 52,52,
+					2, 0xFFFFFFFF,0xFF808080,0xFFFFFFFF);
+
+		text_box("back", 912,384, 52,52, 1,
+			0xFF000000,0xFFFFFFFF,0xFF000000);
+		text_box("caps", 16,512, 52,52, 1,
+			0xFF000000,0xFFFFFFFF,0xFF000000);
+		text_box("enter", 784,512, 116,52, 2,
+			0xFF000000,0xFFFFFFFF,0xFF000000);
+		text_box("shift", 16,576, 116,52, 2,
+			0xFF000000,0xFFFFFFFF,0xFF000000);
+		text_box("shift", 784,576, 116,52, 2,
+			0xFF000000,0xFFFFFFFF,0xFF000000);
+		text_box("", 208,640, 448,52, 1,
+			0xFF000000,0xFFFFFFFF,0xFF000000);
+
+		ts_read(&ts_x, &ts_y);
+
+		for (int y = 0; y < 4; ++y) for (int x = 0; x < 14; ++x)
+			if (in_box((16+64*x), (384+64*y), 52,52) &&
+				(keyboard[n][y][x][0] != '\0')) {
+					output[cur_ch] = keyboard[n][y][x][0];
+					++cur_ch;
+					shift = 0;
+					break;
+			}
+
+		if (in_box(912, 384, 52, 52)) {
+			if ((output[cur_ch] == '\0') && cur_ch) --cur_ch;
+			output[cur_ch] = '\0';
+			if (cur_ch) --cur_ch;
+		} else if (in_box(16, 512, 52, 52))
+			caps = !caps;
+		else if (in_box(784, 512, 116, 52))
+			done = 1;
+		else if (in_box(16, 576, 116, 52) || in_box(784, 576, 116, 52))
+			shift = !shift;
+		else if (in_box(208, 640, 448, 52))
+			output[cur_ch++] = ' ';
+
+	}
+
+	return output;
 }

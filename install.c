@@ -642,3 +642,32 @@ void symlink_binaries(void) {
 	if (symlink("/mnt/root/sbin/dosfsck", "/bin/dosfsck"))
 		stperror("symlink dosfsck failed");
 }
+
+void lv_to_tgz(const char *lv, const char *bname) {
+	int code;
+	char cmd[PATH_MAX];
+
+	stprintf("backing up volume %s to basename %s", lv, bname);
+
+	mount_lv("media");
+	mount_lv(lv);
+
+	mkdir("/mnt/media/nsboot/backups", 0755);
+
+	sprintf(cmd, "/mnt/%s", lv);
+	if (chdir(cmd) == -1) {
+		stperror("can't chdir into source fs");
+		return;
+	}
+
+	snprintf(cmd, sizeof(cmd),
+		 "tar --numeric-owner -czpf /mnt/media/nsboot/backups/%s.tar.gz .",
+		bname);
+
+	if (code = WEXITSTATUS(system(cmd)))
+		steprintf("tar creation failed with code %d", code);
+}
+
+
+
+

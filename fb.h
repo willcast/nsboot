@@ -41,7 +41,7 @@ void fill_rect(int, int, int, int, uint32_t);
 void text(const char *, int, int, int, int, uint32_t, uint32_t);
 
 // UI functions
-void text_box(char *, int, int, int, int, int, uint32_t, uint32_t, uint32_t);
+void text_box(const char *, int, int, int, int, int, uint32_t, uint32_t, uint32_t);
 
 void status(char *);
 void status_error(char *);

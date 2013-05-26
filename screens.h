@@ -30,6 +30,7 @@ void info_screen(void);
 char * select_file(enum filter_spec, char *);
 char * select_lv(int);
 char * select_lv_set(void);
+char * text_input(const char *);
 
 int confirm(const char *);
 long size_screen(long, long, int);

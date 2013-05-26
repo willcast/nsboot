@@ -50,3 +50,4 @@ External programs (unmodified source, statically linked and stripped) used in th
  * lvm2 (lvm)
  * kexec-tools (kexec)
  * ts_srv (tssrv)
+ * GNU tar

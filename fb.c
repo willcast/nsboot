@@ -157,7 +157,7 @@ void fill_rect(int x, int y, int w, int h, uint32_t color) {
 }
 
 // string, X coord, Y coord, width, height, text size, text color, fill color, border color
-void text_box(char *s, int x, int y, int w, int h, int z, uint32_t tc, uint32_t fc, uint32_t bc) {
+void text_box(const char *s, int x, int y, int w, int h, int z, uint32_t tc, uint32_t fc, uint32_t bc) {
 	rect(x, y, w, h, bc);
 	fill_rect(x, y, w, h, fc);
 	text(s, x+8, y+8, z, z, tc, fc);

@@ -63,6 +63,8 @@ int main(int argc, char **argv) {
 	atexit(ts_close);
 
 	mount_lv("media");
+	mkdir("/mnt/media/nsboot", 0755);
+
 	mount_lv("root");
 
 	symlink_binaries();
