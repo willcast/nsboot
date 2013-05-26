@@ -1,0 +1,559 @@
+/*
+    Copyright (C) 2013 Will Castro
+
+    This file is part of nsboot.
+
+    nsboot is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 2 of the License, or
+    (at your option) any later version.
+
+    nsboot is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with nsboot.  If not, see <http://www.gnu.org/licenses/>
+*/
+
+#include "browse.h"
+#include "fb.h"
+#include "install.h"
+#include "screens.h"
+#include "touch.h"
+#include "boot.h"
+
+extern struct boot_item *menu;
+extern int menu_size;
+
+#include <string.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/reboot.h>
+
+void main_menu(void) {
+	int ts_x, ts_y;
+	int quit = 0;
+
+	while (!quit) {
+		clear_screen();
+		text("main menu", 8, 8, 6, 6, 0xFFFFFFFF, 0xFF000000);
+
+		text_box("quit", 16,128, 160,88, 4, 0xFFFFFFFF,0xFFFF0000,0xFFFFFFFF);
+		text_box("power off", 192,128, 340,88, 4, 0xFFFFFFFF,0xFFFF0000,0xFFFFFFFF);
+		text_box("reboot", 548,128, 232,88, 4, 0xFFFFFFFF,0xFFFF0000,0xFFFFFFFF);
+		text_box("boot menu", 16,224, 336,88, 4, 0xFFFFFFFF,0xFF008000,0xFFFFFFFF);
+		text_box("installer menu", 368,224, 520,88, 4, 0xFFFFFFFF,0xFF0000FF,0xFFFFFFFF);
+		text_box("utility menu", 16,320, 448,88, 4, 0xFFFFFFFF, 0xFF606060, 0xFFFFFFFF);
+		text_box("file browser", 496,320, 448,88, 4, 0xFFFFFFFF,0xFF606060, 0xFFFFFFFF);
+		text_box("information", 16,416, 412,88, 4, 0xFFFFFFFF, 0xFF606060, 0xFFFFFFFF);
+
+		ts_read(&ts_x, &ts_y);
+
+		if (in_box(16, 128, 160, 88)) {
+			status("have a nice day");
+			quit = 1;
+		} else if (in_box(192, 128, 340, 88) && confirm()) {
+			status("powering off...");
+			sync();
+			reboot(RB_POWER_OFF);
+		} else if (in_box(548, 128, 232, 88) && confirm()) {
+			status("rebooting...");
+			sync();
+			reboot(RB_AUTOBOOT);
+		} else if (in_box(16, 224, 336, 88))
+			boot_menu();
+		else if (in_box(368, 224, 520, 88))
+			installer_menu();
+		else if (in_box(16, 320, 448, 88))
+			util_menu();
+		else if (in_box(480, 320, 448, 88))
+			select_file(ANY, NULL);
+		else if (in_box(16, 416, 412, 88))
+			info_screen();
+	}
+}
+
+void installer_menu(void) {
+	int ts_x, ts_y;
+	int ret = 0;
+	char *filename, *lv, *lv_set;
+	int flags;
+
+	while (!ret) {
+		clear_screen();
+		text("installer menu", 8, 8, 6, 6, 0xFF0000FF, 0xFF000000);
+
+		text_box("back", 16,128, 124,70, 3, 0xFFFFFFFF,0xFF606060,0xFFFFFFFF);
+		text_box("install .zip to new volume set", 16,214, 556,52, 2,
+			0xFFFFFFFF,0xFF00FFFF,0xFFFFFFFF);
+		text_box("install .zip to existing volume set", 16,282, 644,52, 2,
+			0xFFFFFFFF,0xFF00FFFF,0xFFFFFFFF);
+		text_box("install .tar.gz to new volume", 16,350, 537,52, 2,
+			0xFFFFFFFF,0xFFFFFF00,0xFFFFFFFF);
+		text_box("install .tar.gz to existing volume", 16,418, 628,52, 2,
+			0xFFFFFFFF,0xFFFFFF00,0xFFFFFFFF);
+		text_box("install uImage kernel to boot partition", 16,486, 718,52, 2,
+			0xFFFFFFFF,0xFFFF00FF,0xFFFFFFFF);
+		text_box("install kexec .tar to existing volume", 16,554, 682,52, 2,
+			0xFFFFFFFF,0xFFFF00FF,0xFFFFFFFF);
+
+		ts_read(&ts_x, &ts_y);
+
+		if (in_box(16, 128, 124, 70)) ret = 1;
+		else if (in_box(16, 214, 556, 52)) {
+			filename = select_file(EXT, ".zip");
+			if (filename == NULL) continue;
+			flags = android_options();
+			if (confirm()) install_android(filename, NULL, flags);
+		} else if (in_box(16, 282, 644, 52)) {
+			filename = select_file(EXT, ".zip");
+			if (filename == NULL) continue;
+			lv_set = select_lv_set();
+			if (lv_set == NULL) continue;
+			flags = android_options();
+			if (confirm()) install_android(filename, lv_set, flags);
+		} else if (in_box(16, 350, 537, 52)) {
+			filename = select_file(EXT, ".gz");
+			if (filename == NULL) continue;
+			if (confirm()) install_native(filename, NULL);
+		} else if (in_box(16, 418, 628, 52)) {
+			filename = select_file(EXT, ".gz");
+			if (filename == NULL) continue;
+			lv = select_lv(1);
+			if (lv == NULL) continue;
+			if (confirm()) install_native(filename, lv);
+		} else if (in_box(16, 486, 718, 52)) {
+			filename = select_file(BASE, "uImage.");
+			if (filename == NULL) continue;
+			if (confirm()) install_uimage(filename);
+		} else if (in_box(16, 554, 682, 52)) {
+			filename = select_file(EXT, ".tar");
+			if (filename == NULL) continue;
+			if (confirm()) install_tar(filename);
+		}
+	}
+}
+
+void util_menu(void) {
+	int ts_x, ts_y;
+	int ret = 0;
+	char *lv, *lv_set;
+
+	while (!ret) {
+		clear_screen();
+		text("utility menu", 8, 8, 6, 6, 0xFF808080, 0xFF000000);
+
+		text_box("back", 16,128, 124,70, 3, 0xFFFFFFFF,0xFF606060,0xFFFFFFFF);
+		text_box("delete volume", 16,214, 250,52, 2,
+			0xFFFFFFFF,0xFFFF0000,0xFFFFFFFF);
+		text_box("delete volume set", 282,214, 322,52, 2,
+			0xFFFFFFFF,0xFFFF0000,0xFFFFFFFF);
+		text_box("reclaim media space", 620,214, 358,52, 2,
+			0xFFFFFFFF,0xFF00C000,0xFFFFFFFF);
+		text_box("rescan boot items", 16,282, 322,52, 2,
+			0xFFFFFFFF,0xFF0000FF,0xFFFFFFFF);
+		text_box("mount volume", 354,282, 232,52, 2,
+			0xFFFFFFFF,0xFF606060,0xFFFFFFFF);
+		text_box("mount volume set", 602,282, 304,52, 2,
+			0xFFFFFFFF,0xFF606060,0xFFFFFFFF);
+		text_box("format volume", 16,350, 250,52, 2,
+			0xFFFFFFFF,0xFFFF0000,0xFFFFFFFF);
+		text_box("format volume set", 282,350, 322,52, 2,
+			0xFFFFFFFF,0xFFFF0000,0xFFFFFFFF);
+		text_box("unmount volume", 620,350, 268,52, 2,
+			0xFFFFFFFF,0xFF808080,0xFFFFFFFF);
+
+		ts_read(&ts_x, &ts_y);
+		if (in_box(16, 128, 124, 70)) ret = 1;
+		else if (in_box(16, 214, 250, 52)) {
+			lv = select_lv(1);
+			if (lv == NULL) continue;
+			if (confirm()) delete_lv(lv);
+		} else if (in_box(282, 214, 322, 52)) {
+			lv_set = select_lv_set();
+			if (lv_set == NULL) continue;
+			if (confirm()) delete_lv_set(lv_set);
+		} else if (in_box(620, 214, 358, 52)) {
+			if (confirm()) resize_media(0);
+		} else if (in_box(16, 282, 322, 52)) {
+			free_boot_items();
+			scan_boot_lvs();
+		} else if (in_box(354, 282, 232, 52))
+			mount_lv(select_lv(0));
+		else if (in_box(602, 282, 304, 52))
+			mount_lv_set(select_lv_set());
+		else if (in_box(16, 350, 250, 52)) {
+			lv = select_lv(1);
+			if (lv == NULL) continue;
+			if (confirm()) wipe_lv(lv);
+		} else if (in_box(282, 350, 322, 52)) {
+			lv_set = select_lv_set();
+			if (lv_set == NULL) continue;
+			if (confirm()) wipe_lv_set(lv_set);
+		} else if (in_box(620, 350, 268, 52))
+			umount_lv(select_lv(0));
+	}
+}
+
+// filtloc and filter operate on the filenames and determine whether they
+// may be selected:
+// ALL: don't filter, in this case, filter can be NULL
+// BASE: filter with cmp_base(filename, filter) - only show when part up to
+//       last extension matches
+// EXT: filter with cmp_ext(filename, filter) - only show when (last) extension
+//      matches
+// NAME: filter with strcasecmp(filename, filter) - only show when whole name
+//       matches
+char * select_file(enum filter_spec filtloc, char *filter) {
+	char *selected_file;
+	selected_file = malloc(PATH_MAX * sizeof(char));
+
+	selected_file[0] = '\0';
+
+	while (selected_file[0] == '\0') {
+		int btn_x = 16, btn_y = 250, btn_w;
+		char *pwd = NULL;
+		int n, sel = -1;
+		int *bw, *bx, *by, *keep;
+		int ts_x, ts_y;
+
+		clear_screen();
+
+		update_dir_list();
+		n = file_count();
+
+		bx = malloc(n * sizeof(int));
+		by = malloc(n * sizeof(int));
+		bw = malloc(n * sizeof(int));
+		keep = malloc(n * sizeof(int));
+
+		pwd = getcwd(pwd, PATH_MAX);
+
+		text("select a file", 16, 16, 4, 4, 0xFF00FF00, 0xFF000000);
+		text(pwd, 16, 112, 2, 2, 0xFF606060, 0xFF000000);
+
+		text_box("back", 16,164, 160,70, 3,
+			0xFFFFFFFF,0xFF808080,0xFFFFFFFF);
+
+		for (int i = 0; i < n; ++i) {
+			btn_w = strlen(file_name(i)) * 9 + 16;
+			if (btn_x + btn_w > FBWIDTH) {
+				btn_y += 34;
+				btn_x = 16;
+			}
+			if (btn_y + 26 > FBHEIGHT) break;
+			switch (filtloc) {
+			case ANY:
+				keep[i] = 1;
+				break;
+			case BASE:
+				keep[i] = !cmp_base(file_name(i), filter);
+				break;
+			case EXT:
+				keep[i] = !cmp_ext(file_name(i), filter);
+				break;
+			case NAME:
+				keep[i] = !strcasecmp(file_name(i), filter);
+				break;
+			}
+
+			if (file_is_dir(i)) keep[i] = 1; // always keep directories
+			if (keep[i])
+				text_box(file_name(i), btn_x,btn_y,
+					btn_w,26, 1, 0x00000000, 0xFFFFFFFF,
+					0xFFFFFFFF);
+			else
+				text_box(file_name(i), btn_x, btn_y,
+					btn_w,26, 1, 0xFF606060, 0x00000000,
+					0x00000000);
+
+			bx[i] = btn_x;
+			by[i] = btn_y;
+			bw[i] = btn_w;
+
+			btn_x += btn_w + 16;
+		}
+
+		while (sel == -1) {
+			ts_read(&ts_x, &ts_y);
+			if (in_box(16, 164, 160, 70)) {
+				free(bx);
+				free(by);
+				free(bw);
+				free(keep);
+				return NULL;
+			}
+			for (int i = 0; i < n; ++i)
+				if (keep[i] && in_box(bx[i], by[i], bw[i], 26))
+					sel = i;
+		}
+
+		free(bx);
+		free(by);
+		free(bw);
+		free(keep);
+
+		if (file_is_dir(sel)) {
+			if (chdir(file_name(sel)) == -1)
+				perror("chdir");
+		} else {
+			strcpy(selected_file, pwd);
+			strcat(selected_file, "/");
+			strcat(selected_file, file_name(sel));
+		}
+	}
+
+	return selected_file;
+}
+
+char * select_lv(int disable_android) {
+	int btn_x = 16, btn_y = 208, btn_w;
+	int n;
+	int ts_x, ts_y;
+	int *bx, *by, *bw;
+	char *selected_lv = NULL;
+
+	clear_screen();
+
+	update_lv_lists();
+	n = lv_count();
+
+	text("select a volume", 16, 16, 4, 4, 0xFFFFFFFF, 0xFF000000);
+
+	text_box("back", 16,104, 160,70, 3, 0xFFFFFFFF, 0xFF606060, 0xFFFFFFFF);
+
+	bx = malloc(n * sizeof(int));
+	by = malloc(n * sizeof(int));
+	bw = malloc(n * sizeof(int));
+
+	for (int i = 0; i < n; ++i) {
+		btn_w = strlen(lv_name(i)) * 9 + 16;
+		if (btn_x + btn_w > FBWIDTH) {
+			btn_y += 34;
+			btn_x = 16;
+		}
+		if (btn_y + 26 > FBHEIGHT) break;
+		if (is_android(lv_name(i)) && disable_android)
+			text_box(lv_name(i), btn_x, btn_y,
+				btn_w,26, 1, 0xFF606060, 0x00000000,
+				0x00000000);
+		else
+			text_box(lv_name(i), btn_x,btn_y,
+				btn_w,26, 1, 0x00000000, 0xFFFFFFFF,
+				0xFFFFFFFF);
+
+		bx[i] = btn_x;
+		by[i] = btn_y;
+		bw[i] = btn_w;
+
+		btn_x += btn_w + 16;
+	}
+
+	while (selected_lv == NULL) {
+		ts_read(&ts_x, &ts_y);
+		if (in_box(16,104, 160,70))
+			break;
+		for (int i = 0; i < n; ++i)
+			if (in_box(bx[i], by[i], bw[i], 26))
+				selected_lv = strdup(lv_name(i));
+	}
+
+	free(bx);
+	free(by);
+	free(bw);
+
+	return selected_lv;
+}
+
+char * select_lv_set(void) {
+	int btn_x = 16, btn_y = 208, btn_w;
+	int *bx, *by, *bw;
+	int ts_x, ts_y;
+	int n;
+	char *selected_set = NULL;
+
+	clear_screen();
+
+	update_lv_lists();
+	n = lv_set_count();
+
+	bx = malloc(n * sizeof(int));
+	by = malloc(n * sizeof(int));
+	bw = malloc(n * sizeof(int));
+
+	text("select a volume set", 16, 16, 4, 4, 0xFFFFFFFF, 0xFF000000);
+	text_box("back", 16,104, 160,70, 3, 0xFFFFFFFF,0xFF808080,0xFFFFFFFF);
+
+	for (int i = 0; i < n; ++i) {
+		btn_w = strlen(lv_set_name(i)) * 9 + 16;
+		if (btn_x + btn_w > FBWIDTH) {
+			btn_y += 34;
+			btn_x = 16;
+		}
+		if (btn_y + 26 > FBHEIGHT) break;
+		text_box(lv_set_name(i), btn_x,btn_y,
+			btn_w,26, 1, 0x00000000, 0xFFFFFFFF,
+			0xFFFFFFFF);
+
+		bx[i] = btn_x;
+		by[i] = btn_y;
+		bw[i] = btn_w;
+
+		btn_x += btn_w + 16;
+	}
+
+	while (selected_set == NULL) {
+		ts_read(&ts_x, &ts_y);
+		if (in_box(16, 104, 160, 70))
+			break;
+		for (int i = 0; i < n; ++i)
+			if (in_box(bx[i], by[i], bw[i], 26))
+				selected_set = strdup(lv_set_name(i));
+	}
+
+	free(bx);
+	free(by);
+	free(bw);
+
+	return selected_set;
+}
+
+// 0 for true, 1 for false
+int confirm(void) {
+	int ret = -1;
+	int ts_x, ts_y;
+
+	clear_screen();
+	text("are you sure?", 16, 16, 5, 5, 0xFFC0C0C0, 0x00000000);
+
+	text_box("yes", 16,120, 151,106, 5, 0xFFFFFFFF,0xFF00FF00,0xFFFFFFFF);
+	text_box("no", 16,287, 106,106, 5, 0xFFFFFFFF,0xFFFF0000,0xFFFFFFFF);
+
+	while (ret == -1) {
+		ts_read(&ts_x, &ts_y);
+		if (in_box(16, 120, 151, 106)) ret = 1;
+		else if (in_box(16, 287, 106, 106)) ret = 0;
+	}
+	return ret;
+}
+
+int android_options(void) {
+	int ret = 0, done = 0;
+	int ts_x, ts_y;
+
+	while (!done) {
+		clear_screen();
+		text("install options", 16, 16, 4, 4, 0xFFFFFFFF, 0x00000000);
+		text_box("accept", 16,104, 178,70, 3, 0xFFFFFFFF,0xFF808080,0xFFFFFFFF);
+		text_box("wipe system", 16,208, 412,88, 4,
+			(ret & WIPE_SYSTEM) ? 0xFFFFFFFF : 0x00000000,
+			(ret & WIPE_SYSTEM) ? 0x00000000 : 0xFFFFFFFF,
+			(ret & WIPE_SYSTEM) ? 0xFFFFFFFF : 0x00000000);
+
+		text_box("wipe data", 16,312, 340,88, 4,
+			(ret & WIPE_DATA) ? 0xFFFFFFFF : 0x00000000,
+			(ret & WIPE_DATA) ? 0x00000000 : 0xFFFFFFFF,
+			(ret & WIPE_DATA) ? 0xFFFFFFFF : 0x00000000);
+
+		text_box("wipe cache", 16,424, 376,88, 4,
+			(ret & WIPE_CACHE) ? 0xFFFFFFFF : 0x00000000,
+			(ret & WIPE_CACHE) ? 0x00000000 : 0xFFFFFFFF,
+			(ret & WIPE_CACHE) ? 0xFFFFFFFF : 0x00000000);
+
+		text_box("install to moboot", 16,536, 628,88, 4,
+			(ret & INST_MOBOOT) ? 0xFFFFFFFF : 0x00000000,
+			(ret & INST_MOBOOT) ? 0x00000000 : 0xFFFFFFFF,
+			(ret & INST_MOBOOT) ? 0xFFFFFFFF : 0x00000000);
+
+		ts_read(&ts_x, &ts_y);
+
+		if (in_box(16, 208, 412, 88)) ret ^= WIPE_SYSTEM;
+		else if (in_box(16, 312, 340, 88)) ret ^= WIPE_DATA;
+		else if (in_box(16, 424, 376, 88)) ret ^= WIPE_CACHE;
+		else if (in_box(16, 328, 628, 88)) ret ^= INST_MOBOOT;
+		else if (in_box(16, 104, 178, 70)) done = 1;
+	}
+	return ret;
+}
+
+void boot_menu(void) {
+	int ts_x, ts_y;
+	int sel = -1;
+	int *by, *bw;
+
+	clear_screen();
+
+	text("select a boot entry", 16, 16, 4, 4, 0xFFFFFFFF, 0xFF000000);
+	text_box("back", 16,104, 160,70, 3, 0xFFFFFFFF,0xFF808080,0xFFFFFFFF);
+
+	if (!menu_size) scan_boot_lvs();
+
+	by = malloc(menu_size * sizeof(int));
+	bw = malloc(menu_size * sizeof(int));
+
+	for (int i = 0; i < menu_size; ++i) {
+		int btn_y = 208 + i * 34;
+		struct boot_item *cur_item = menu + i; 
+		int btn_w = 16 + strlen(cur_item->label) * 9;
+
+		text_box(cur_item->label, 16,btn_y, btn_w,26, 1,
+			0x00000000, 0xFFFFFFFF, 0xFFFFFFFF);
+
+		by[i] = btn_y;
+		bw[i] = btn_w;
+	}
+
+	while (sel == -1) {
+		ts_read(&ts_x, &ts_y);
+		if (in_box(16, 104, 160, 70)) break;
+
+		for (int i = 0; i < menu_size; ++i) {
+			if (in_box(16, by[i], bw[i], 26))
+				boot_kexec(i);
+		}
+	}
+
+	free(by);
+	free(bw);
+}
+
+void info_screen(void) {
+	int ts_x, ts_y;
+	int ret = 0;
+	char date_str[128], battery_str[32];
+	long charge_full, charge_now;
+	float percent;
+	FILE *fp;
+
+	while (!ret) {
+		clear_screen();
+
+		fp = popen("date", "r");
+		if (date_str == NULL) {
+			stperror("error invoking date cmd");
+			return;
+		}
+
+		if (fgets(date_str, sizeof(date_str), fp) == NULL) {
+			stperror("error piping from date cmd");
+			return;
+		}
+		fclose(fp);
+
+		text("information", 16,16, 4,4, 0xFFFFFFFF, 0xFF000000);
+		text("nsboot by willcast, 2013", 16,104, 2,2, 0xFF808080, 0xFF000000);
+		text(date_str, 16,156, 2,2, 0xFF808080, 0xFF000000);
+		text("touch to update", 16,198, 2,2, 0xFF808080, 0xFF000000);
+
+
+		text_box("back", 16,282, 160,70, 3, 0xFFFFFFFF,0xFF808080,0xFFFFFFFF);
+
+		ts_read(&ts_x, &ts_y);
+
+		if (in_box(16, 249, 160, 70)) ret = 1;
+	}
+}
+
