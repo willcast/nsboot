@@ -412,14 +412,35 @@ void install_tar(char *file) {
 }
 
 void install_uimage(char *file) {
-	char cmd[64];
+	char cmd[PATH_MAX];
 	int code;
+	int verbose_fd;
+	char *dot;
 
 	stprintf("installing uImage file %s", file);
 
+	dot = strchr(file, '.');
+	// we do NOT want to let users install to /boot/uImage!
+	if (dot == NULL) return;
+	++dot;
+
 	sprintf(cmd, "cp %s /mnt/boot", file);
-	if (code = WEXITSTATUS(system(cmd)))
+	if (code = WEXITSTATUS(system(cmd))) {
 		steprintf("uImage copy failed with code %d", code);
+		return;
+	}
+
+	sprintf(cmd, "/mnt/boot/moboot.verbose.%s", dot);
+	verbose_fd = open(cmd, O_WRONLY | O_TRUNC);
+	if (verbose_fd < 0) {
+		stperror("can't open moboot.verbose");
+		return;
+	}
+	if (write(verbose_fd, "yes", 4) != 4)
+		stperror("can't write to moboot.verbose");
+
+	close(verbose_fd);
+	return;
 }
 
 char * deduce_lv(const char *filename) {
