@@ -122,6 +122,8 @@ void installer_menu(void) {
 			0xFFFFFFFF,0xFFFF00FF,0xFFFFFFFF);
 		text_box("install kexec .tar to existing volume", 16,554, 682,52, 2,
 			0xFFFFFFFF,0xFFFF00FF,0xFFFFFFFF);
+		text_box("replace moboot with nsboot", 16,622, 502,52, 2,
+			0xFFFFFFFF,0xFFFF0000,0xFFFFFFFF);
 
 		ts_read(&ts_x, &ts_y);
 
@@ -163,6 +165,8 @@ void installer_menu(void) {
 			if (filename == NULL) continue;
 			if (confirm("install kexec .tar"))
                                 install_tar(filename);
+		} else if (in_box(16, 622, 502, 52)) {
+			if  (confirm("replace moboot")) replace_moboot();
 		}
 	}
 }

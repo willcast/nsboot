@@ -60,5 +60,7 @@ void resize_media(long);
 
 void symlink_binaries(void);
 
+void replace_moboot(void);
+
 #endif
 

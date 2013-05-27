@@ -10,7 +10,7 @@ nsboot-test: *.[ch]
 clean: 
 	rm -f nsboot .rd .urd uImage
 
-uImage: nsboot
+uImage: nsboot uKernel.test
 	rm -f .rd.lzma
 	cp nsboot root/bin
 	cp t.fnt root

@@ -33,7 +33,7 @@
 #include "install.h"
 
 const char *keepable_args[] = { "fbcon=", "klog=", "klog_len=", "nduid=",
-	"androidboot.serialno=" };
+	"androidboot.serialno=", "boardtype=" };
 
 char *boot_lvs[] = { "root", "ubuntu-root", "arch-root", "bodhi-root",
 	"slackware-root", "fedora-root", "cm-system", "android22-system",

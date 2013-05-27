@@ -404,7 +404,7 @@ void install_tar(char *file) {
 
 	mount_lv(lv);
 
-	sprintf(cmd, "cp -r /mnt/tar /mnt/%s/boot", lv);
+	sprintf(cmd, "cp /mnt/tar/* /mnt/%s/boot", lv);
 	status(cmd);
 
 	if (code = WEXITSTATUS(system(cmd)))
@@ -668,6 +668,29 @@ void lv_to_tgz(const char *lv, const char *bname) {
 		steprintf("tar creation failed with code %d", code);
 }
 
+void replace_moboot(void) {
+	int code;
 
+	status("replacing noboot with nsboot");
 
+	if (!test_file("/mnt/boot/uImage.nsboot")) {
+		steprintf("nsboot is not installed in boot");
+		return;
+	}
 
+	if (chdir("/mnt/boot") == -1) {
+		stperror("error changing directory to boot");
+		return;
+	}
+
+	if (code = WEXITSTATUS(system("mv uImage uImage.old"))) {
+		steprintf("relocation of old bootloader failed with code %d", code);
+		status_error("WARNING: YOU MAY NEED TO USE NOVACOM TO REINSTALL A BOOTLOADER");
+		return;
+	}
+
+	if (symlink("uImage.nsboot", "uImage") == -1) {
+		stperror("error symlinking nsboot as main bootloader");
+		status_error("WARNING: YOU MAY NEED TO USE NOVACOM TO REINSTALL A BOOTLOADER");
+	}
+}
