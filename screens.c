@@ -160,7 +160,7 @@ void installer_menu(void) {
 			lv = select_lv(0);
 			if (lv == NULL) continue;
 			if (confirm("install .tar.gz file"))
-                                install_native(filename, lv, 0);
+	                                install_native(filename, lv, 0);
 		} else if (in_box(16, 486, 718, 52)) {
 			filename = select_file(BASE, "uImage.");
 			if (filename == NULL) continue;
@@ -246,11 +246,12 @@ void util_menu(void) {
 		} else if (in_box(620, 350, 268, 52))
 			umount_lv(select_lv(0));
 		else if (in_box(16, 418, 415, 52)) {
-			 lv = select_lv(0);
-			 if (lv == NULL) continue;
-			 bname = text_input("Enter the name for your backup:");
-			 if (bname == NULL) continue;
-			 if (confirm("backing up takes > 5 min")) lv_to_tgz(lv, bname);
+			lv = select_lv(0);
+			if (lv == NULL) continue;
+			bname = text_input("Enter the name for your backup:");
+			if (bname == NULL) continue;
+			if (confirm("backing up takes > 5 min")) lv_to_tgz(lv, bname);
+			free(bname);
 		} else if (in_box(444, 418, 322, 52)) {
 			if (getcwd(pwd, PATH_MAX) == NULL) {
 				stperror("can't getcwd");
@@ -268,11 +269,13 @@ void util_menu(void) {
 			dat = size_screen("for data volume", 200, 512, 16);
 			cac = size_screen("for cache volume", 192, 256, 8);
 			if (confirm("create volume set")) new_lv_set(lv_set, sys, dat, cac);
+			free(lv_set);
 		} else if (in_box(354, 486, 250, 52)) {
 			lv = text_input("enter volume name - example: arch-root");
-			if ((lv_set == NULL) || (lv_set[0] == '\0')) continue;
+			if ((lv == NULL) || (lv[0] == '\0')) continue;
 			sys = size_screen("for new volume", 256, 10240, 256);
 			if (confirm("create volume")) new_lv(lv, sys);
+			free(lv);
 		}
 	}
 }
@@ -850,6 +853,7 @@ void task_menu(const char *file1) {
 			} while (slash != NULL);
 			if (confirm("rename file - files may be overwritten"))
 				move_file(file1, file2);
+			free(file2);
 			done = 1;
 		} else if (in_box(16, 338, 259, 70)) {
 			file2 = select_file(ANY, NULL);
@@ -875,6 +879,7 @@ void task_menu(const char *file1) {
 			} while (slash != NULL);
 			mkdir(file2, 0755);
 			stprintf("directory %s created with mode 0755", file2);
+			free(file2);
 		} else if (in_box(176, 500, 88, 52)) mode ^= 00400;
 		else if (in_box(276, 500, 106, 52))  mode ^= 00200;
 		else if (in_box(398, 500, 142, 52))  mode ^= 00100;
