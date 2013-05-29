@@ -854,7 +854,7 @@ void task_menu(const char *file1) {
 				}
 			} while (slash != NULL);
 			mkdir(file2, 0755);
-			stprintf("directory %s created with mode 0755");
+			stprintf("directory %s created with mode 0755", file2);
 		} else if (in_box(176, 500, 88, 52)) mode ^= 00400;
 		else if (in_box(276, 500, 106, 52))  mode ^= 00200;
 		else if (in_box(398, 500, 142, 52))  mode ^= 00100;

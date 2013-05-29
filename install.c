@@ -404,7 +404,10 @@ void install_tar(char *file) {
 
 	mount_lv(lv);
 
-	sprintf(cmd, "cp /mnt/tar/* /mnt/%s/boot", lv);
+	sprintf(cmd, "/mnt/%s/boot", lv);
+	mkdir(cmd, 0755);
+
+	sprintf(cmd, "cp -f /mnt/tar/* /mnt/%s/boot/", lv);
 	status(cmd);
 
 	if (code = WEXITSTATUS(system(cmd)))
