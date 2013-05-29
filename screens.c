@@ -179,9 +179,10 @@ void installer_menu(void) {
 
 void util_menu(void) {
 	int ts_x, ts_y;
-	int ret = 0;
+	int ret = 0, code;
 	long sys, dat, cac;
-	char *bname, *lv, *lv_set;
+	char *bname, *lv, *lv_set, *cmd;
+	char pwd[PATH_MAX];
 
 	while (!ret) {
 		clear_screen();
@@ -208,7 +209,11 @@ void util_menu(void) {
 			0xFFFFFFFF,0xFF808080,0xFFFFFFFF);
 		text_box("create volume tarchive", 16,418, 412,52, 2,
 			0xFFFFFFFF,0xFF0000FF,0xFFFFFFFF);
+		text_box("run shell command", 444,418, 322,52, 2,
+			0xFFFFFFFF,0xFF00FF00,0xFFFFFFFF);
 		text_box("create volume set", 16,486, 322,52, 2,
+			0xFF000000,0xFFFFFFFF,0xFF000000);
+		text_box("create volume", 354,486, 250,52, 2,
 			0xFF000000,0xFFFFFFFF,0xFF000000);
 
 		ts_read(&ts_x, &ts_y);
@@ -246,6 +251,16 @@ void util_menu(void) {
 			 bname = text_input("Enter the name for your backup:");
 			 if (bname == NULL) continue;
 			 if (confirm("backing up takes > 5 min")) lv_to_tgz(lv, bname);
+		} else if (in_box(444, 418, 322, 52)) {
+			if (getcwd(pwd, PATH_MAX) == NULL) {
+				stperror("can't getcwd");
+				continue;
+			}
+			cmd = text_input(pwd);
+			if ((cmd == NULL) || (cmd[0] == '\0')) continue;
+			if (code = WEXITSTATUS(system(cmd)))
+				steprintf("your shell command exited with code %d", code);
+			free(cmd);
 		} else if (in_box(16, 486, 322, 52)) {
 			lv_set = text_input("enter volume set name - example: android42");
 			if ((lv_set == NULL) || (lv_set[0] == '\0')) continue;
@@ -253,6 +268,11 @@ void util_menu(void) {
 			dat = size_screen("for data volume", 200, 512, 16);
 			cac = size_screen("for cache volume", 192, 256, 8);
 			if (confirm("create volume set")) new_lv_set(lv_set, sys, dat, cac);
+		} else if (in_box(354, 486, 250, 52)) {
+			lv = text_input("enter volume name - example: arch-root");
+			if ((lv_set == NULL) || (lv_set[0] == '\0')) continue;
+			sys = size_screen("for new volume", 256, 10240, 256);
+			if (confirm("create volume")) new_lv(lv, sys);
 		}
 	}
 }
@@ -683,7 +703,7 @@ char * text_input(const char *prompt) {
 			0xFF000000,0xFFFFFFFF,0xFF000000);
 		text_box("enter", 784,512, 116,52, 2,
 			0xFF000000,0xFFFFFFFF,0xFF000000);
-		text_box("shift", 16,576, 116,52, 2,
+		text_box("shift", 16,576, 52,52, 1,
 			0xFF000000,0xFFFFFFFF,0xFF000000);
 		text_box("shift", 784,576, 116,52, 2,
 			0xFF000000,0xFFFFFFFF,0xFF000000);
