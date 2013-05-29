@@ -29,6 +29,7 @@
 
 #include "browse.h"
 #include "types.h"
+#include "fb.h"
 
 struct dir_list *current = NULL;
 struct dir_list *lvs = NULL;
@@ -160,4 +161,32 @@ char * lv_name(int num) {
 
 char * lv_set_name(int num) {
 	return lv_sets->data[num];
+}
+
+void copy_file(const char *srcpath, const char *destpath) {
+	char cmd[2*PATH_MAX + 8];
+	int code;
+
+	stprintf("from: %s", srcpath);
+	stprintf("to: %s", destpath);
+
+	snprintf(cmd, sizeof(cmd), "cp -rf %s %s", srcpath, destpath);
+	if (code = WEXITSTATUS(system(cmd)))
+		steprintf("cp invocation failed with code %d", code);
+}
+
+void move_file(const char *srcpath, const char *destpath) {
+	char cmd[2*PATH_MAX + 4];
+	int code;
+
+	stprintf("from: %s", srcpath);
+	stprintf("to: %s", destpath);
+
+	snprintf(cmd, sizeof(cmd), "mv %s %s", srcpath, destpath);
+	if (code = WEXITSTATUS(system(cmd)))
+		steprintf("mv invocation failed with code %d", code);
+}
+
+int file_mode(int num) {
+	return current->stats[num]->st_mode & 07777;
 }

@@ -46,6 +46,7 @@ void sel_lv(int);
 int file_is_dir(int);
 char * file_name(int);
 int file_count(void);
+int file_mode(int);
 
 char * lv_name(int);
 int lv_count(void);
@@ -54,5 +55,8 @@ char * lv_set_name(int);
 int lv_set_count(void);
 
 int is_android(char *);
+
+void copy_file(const char *, const char *);
+void move_file(const char *, const char *);
 
 #endif

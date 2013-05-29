@@ -27,6 +27,9 @@
 extern struct boot_item *menu;
 extern int menu_size;
 
+//number of selected file.
+int sel;
+
 #include <string.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -58,6 +61,7 @@ const char keyboard[4][4][14][2] = { {
 void main_menu(void) {
 	int ts_x, ts_y;
 	int quit = 0;
+	char *file1;
 
 	while (!quit) {
 		clear_screen();
@@ -91,10 +95,12 @@ void main_menu(void) {
 			installer_menu();
 		else if (in_box(16, 320, 448, 88))
 			util_menu();
-		else if (in_box(480, 320, 448, 88))
-			select_file(ANY, NULL);
-		else if (in_box(16, 416, 412, 88))
-			info_screen();
+		else if (in_box(480, 320, 448, 88)) {
+			file1 =	select_file(ANY, NULL);
+			if (file1 == NULL) continue;
+			task_menu(file1);
+		} else if (in_box(16, 416, 412, 88))
+     			info_screen();
 	}
 }
 
@@ -145,15 +151,15 @@ void installer_menu(void) {
 		} else if (in_box(16, 350, 537, 52)) {
 			filename = select_file(EXT, ".gz");
 			if (filename == NULL) continue;
-                        size = size_screen(1728, 8192, 256);
-			if (confirm("install native Linux"))
+                        size = size_screen("for new volume", 1728, 8192, 256);
+			if (confirm("install .tar.gz file"))
                                 install_native(filename, NULL, size);
 		} else if (in_box(16, 418, 628, 52)) {
 			filename = select_file(EXT, ".gz");
 			if (filename == NULL) continue;
-			lv = select_lv(1);
+			lv = select_lv(0);
 			if (lv == NULL) continue;
-			if (confirm("install native Linux"))
+			if (confirm("install .tar.gz file"))
                                 install_native(filename, lv, 0);
 		} else if (in_box(16, 486, 718, 52)) {
 			filename = select_file(BASE, "uImage.");
@@ -174,6 +180,7 @@ void installer_menu(void) {
 void util_menu(void) {
 	int ts_x, ts_y;
 	int ret = 0;
+	long sys, dat, cac;
 	char *bname, *lv, *lv_set;
 
 	while (!ret) {
@@ -201,6 +208,8 @@ void util_menu(void) {
 			0xFFFFFFFF,0xFF808080,0xFFFFFFFF);
 		text_box("create volume tarchive", 16,418, 412,52, 2,
 			0xFFFFFFFF,0xFF0000FF,0xFFFFFFFF);
+		text_box("create volume set", 16,486, 322,52, 2,
+			0xFF000000,0xFFFFFFFF,0xFF000000);
 
 		ts_read(&ts_x, &ts_y);
 		if (in_box(16, 128, 124, 70)) ret = 1;
@@ -237,6 +246,13 @@ void util_menu(void) {
 			 bname = text_input("Enter the name for your backup:");
 			 if (bname == NULL) continue;
 			 if (confirm("backing up takes > 5 min")) lv_to_tgz(lv, bname);
+		} else if (in_box(16, 486, 322, 52)) {
+			lv_set = text_input("enter volume set name - example: android42");
+			if ((lv_set == NULL) || (lv_set[0] == '\0')) continue;
+			sys = size_screen("for system volume", 256, 512, 16);
+			dat = size_screen("for data volume", 200, 512, 16);
+			cac = size_screen("for cache volume", 192, 256, 8);
+			if (confirm("create volume set")) new_lv_set(lv_set, sys, dat, cac);
 		}
 	}
 }
@@ -259,9 +275,11 @@ char * select_file(enum filter_spec filtloc, char *filter) {
 	while (selected_file[0] == '\0') {
 		int btn_x = 16, btn_y = 250, btn_w;
 		char *pwd = NULL;
-		int n, sel = -1;
+		int n;
 		int *bw, *bx, *by, *keep;
 		int ts_x, ts_y;
+
+		sel = -1;
 
 		clear_screen();
 
@@ -600,7 +618,7 @@ void info_screen(void) {
 	}
 }
 
-long size_screen(long min, long max, int step) {
+long size_screen(const char *msg, long min, long max, int step) {
 	int ts_x, ts_y;
 	int ret = 0;
 	long size;
@@ -614,18 +632,19 @@ long size_screen(long min, long max, int step) {
 		snprintf(size_str, sizeof(size_str), "size: %ld MiB", size);
 
 		text("select volume size", 16,16, 4,4, 0xFFFFFFFF,0xFF000000);
-		text(size_str, 16,104, 2,2, 0xFF808080, 0xFF000000);
+		text(msg, 16,104, 2,2, 0xFF808080, 0xFF000000);
+		text(size_str, 16,192, 2,2, 0xFF808080, 0xFF000000);
 
-		text_box("okay", 16,156, 160,70, 3, 0xFFFFFFFF,0xFF808080,0xFFFFFFFF);
-		text_box("decrease", 16,242, 232,70, 3, 0xFF000000,0xFFFFFFFF,0xFF000000);
-		text_box("increase", 264,242, 232,70, 3, 0xFF000000,0xFFFFFFFF,0xFF000000);
+		text_box("okay", 16,280, 160,70, 3, 0xFFFFFFFF,0xFF808080,0xFFFFFFFF);
+		text_box("decrease", 16,388, 232,70, 3, 0xFF000000,0xFFFFFFFF,0xFF000000);
+		text_box("increase", 264,388, 232,70, 3, 0xFF000000,0xFFFFFFFF,0xFF000000);
 
 		ts_read(&ts_x, &ts_y);
 
-		if (in_box(16, 156, 160, 70)) ret = 1;
-		else if (in_box(16, 242, 232, 70) && (size - step >= min))
+		if (in_box(16, 280, 160, 70)) ret = 1;
+		else if (in_box(16, 388, 232, 70) && (size - step >= min))
 			size -= step;
-		else if (in_box(264, 242, 232, 70) && (size + step <= max))
+		else if (in_box(264, 388, 232, 70) && (size + step <= max))
 			size += step;
 	}
 
@@ -699,3 +718,156 @@ char * text_input(const char *prompt) {
 
 	return output;
 }
+
+void task_menu(const char *file1) {
+	char *file2, *slash;
+	int ts_x, ts_y;
+	int done = 0, mode;
+
+	mode = file_mode(sel);
+
+	while (!done) {
+		clear_screen();
+
+		text("tasks for file:", 16,16, 4,4, 0xFFFFFFFF, 0xFF000000);
+		text(file1, 16,104, 1,1, 0xFFC0C0C0, 0xFF000000);
+
+		text_box("cancel", 16,148, 232,88, 4, 0xFFFFFFFF,
+		0xFFFF0000, 0xFFFFFFFF);
+		text_box("okay", 264,148, 160,88, 4, 0xFFFFFFFF,
+		0xFF00FF00, 0xFFFFFFFF);
+		text_box("move item", 16,252, 259,70, 3, 0xFFFFFFFF,
+			0xFF0000C0, 0xFFFFFFFF);
+		text_box("rename item", 291,252, 313,70, 3, 0xFFFFFFFF,
+			0xFF0000C0, 0xFFFFFFFF);
+		text_box("copy item", 16,338, 259,70, 3, 0xFFFFFFFF,
+			0xFF0000FF, 0xFFFFFFFF);
+		text_box("delete item", 291,338, 313,70, 3, 0xFFFFFFFF,
+			0xFFFF0000, 0xFFFFFFFF);
+		text_box("make directory", 16,424, 394,70, 3, 0xFFFFFFFF,
+			0xFFC0C0C0, 0xFFFFFFF);
+
+		text("user", 16,500, 2,2, 0xFFFF0000, 0xFF000000);
+		text_box("read", 176,500, 88,52, 2,
+			(mode & 00400) ? 0xFF000000 : 0xFFFFFFFF,
+			(mode & 00400) ? 0xFFFFFFFF : 0xFF000000,
+			(mode & 00400) ? 0xFF000000 : 0xFFFFFFFF);
+		text_box("write", 276,500, 106,52, 2,
+			(mode & 00200) ? 0xFF000000 : 0xFFFFFFFF,
+			(mode & 00200) ? 0xFFFFFFFF : 0xFF000000,
+			(mode & 00200) ? 0xFF000000 : 0xFFFFFFFF);
+		text_box("execute", 398,500, 142,52, 2,
+			(mode & 00100) ? 0xFF000000 : 0xFFFFFFFF,
+			(mode & 00100) ? 0xFFFFFFFF : 0xFF000000,
+			(mode & 00100) ? 0xFF000000 : 0xFFFFFFFF);
+
+		text("group", 16,570, 2,2, 0xFF00FF00, 0xFF000000);
+		text_box("read", 176,570, 88,52, 2,
+			(mode & 00040) ? 0xFF000000 : 0xFFFFFFFF,
+			(mode & 00040) ? 0xFFFFFFFF : 0xFF000000,
+			(mode & 00040) ? 0xFF000000 : 0xFFFFFFFF);
+		text_box("write", 276,570, 106,52, 2,
+			(mode & 00020) ? 0xFF000000 : 0xFFFFFFFF,
+			(mode & 00020) ? 0xFFFFFFFF : 0xFF000000,
+			(mode & 00020) ? 0xFF000000 : 0xFFFFFFFF);
+		text_box("execute", 398,570, 142,52, 2,
+			(mode & 00010) ? 0xFF000000 : 0xFFFFFFFF,
+			(mode & 00010) ? 0xFFFFFFFF : 0xFF000000,
+			(mode & 00010) ? 0xFF000000 : 0xFFFFFFFF);
+
+		text("everyone", 16,640, 2,2, 0xFF0000FF, 0xFF000000);
+		text_box("read", 176,640, 88,52, 2,
+			(mode & 00004) ? 0xFF000000 : 0xFFFFFFFF,
+			(mode & 00004) ? 0xFFFFFFFF : 0xFF000000,
+			(mode & 00004) ? 0xFF000000 : 0xFFFFFFFF);
+		text_box("write", 276,640, 106,52, 2,
+			(mode & 00002) ? 0xFF000000 : 0xFFFFFFFF,
+			(mode & 00002) ? 0xFFFFFFFF : 0xFF000000,
+			(mode & 00002) ? 0xFF000000 : 0xFFFFFFFF);
+		text_box("execute", 398,640, 142,52, 2,
+			(mode & 00001) ? 0xFF000000 : 0xFFFFFFFF,
+			(mode & 00001) ? 0xFFFFFFFF : 0xFF000000,
+			(mode & 00001) ? 0xFF000000 : 0xFFFFFFFF);
+
+		text("special", 16,710, 2,2, 0xFFFFFFFF, 0xFF000000);
+		text_box("set UID", 158,710, 142,52, 2,
+			(mode & 01000) ? 0xFF000000 : 0xFFFFFFFF,
+			(mode & 01000) ? 0xFFFFFFFF : 0xFF000000,
+			(mode & 01000) ? 0xFF000000 : 0xFFFFFFFF);
+		text_box("set GID", 316,710, 142,52, 2,
+			(mode & 02000) ? 0xFF000000 : 0xFFFFFFFF,
+			(mode & 02000) ? 0xFFFFFFFF : 0xFF000000,
+			(mode & 02000) ? 0xFF000000 : 0xFFFFFFFF);
+		text_box("sticky", 474,710, 142,52, 2,
+			(mode & 04000) ? 0xFF000000 : 0xFFFFFFFF,
+			(mode & 04000) ? 0xFFFFFFFF : 0xFF000000,
+			(mode & 04000) ? 0xFF000000 : 0xFFFFFFFF);
+
+		ts_read(&ts_x, &ts_y);
+
+		if (in_box(16, 148, 232, 88)) done = 1;
+		else if (in_box(264, 148, 160, 88)) {
+			chmod(file1, mode);
+			done = 1;
+		} else if (in_box(16, 252, 259, 70)) {
+			file2 = select_file(ANY, NULL);
+			if (file2 == NULL) return;
+			if (confirm("move file - files maybe be overwritten")) {
+				slash = strrchr(file2, '/');
+				*slash = '\0';
+
+				move_file(file1, file2);
+			}
+			done = 1;
+ 		} else if (in_box(291, 252, 313, 70)) {
+			do {
+				file2 = text_input("enter new name:");
+				slash = strchr(file2, '/');
+				if (slash != NULL) {
+					status_error("new name can't contain a slash");
+					free(file2);
+				}
+			} while (slash != NULL);
+			if (confirm("rename file - files may be overwritten"))
+				move_file(file1, file2);
+			done = 1;
+		} else if (in_box(16, 338, 259, 70)) {
+			file2 = select_file(ANY, NULL);
+			if (file2 == NULL) return;
+
+			if (confirm("copy file - destination will be overwritten")) {
+				slash = strrchr(file2, '/');
+				*slash = '\0';
+
+				copy_file(file1, file2);
+			}
+		} else if (in_box(291, 338, 313, 70) && confirm("delete file permanently")) {
+			unlink(file1);
+			done = 1;
+		} else if (in_box(16, 424, 394, 70)) {
+			do {
+				file2 = text_input("enter directory name:");
+				slash = strchr(file2, '/');
+				if (slash != NULL) {
+					status_error("name can't contain a slash");
+					free(file2);
+				}
+			} while (slash != NULL);
+			mkdir(file2, 0755);
+			stprintf("directory %s created with mode 0755");
+		} else if (in_box(176, 500, 88, 52)) mode ^= 00400;
+		else if (in_box(276, 500, 106, 52))  mode ^= 00200;
+		else if (in_box(398, 500, 142, 52))  mode ^= 00100;
+		else if (in_box(176, 570, 88, 52))   mode ^= 00040;
+		else if (in_box(276, 570, 106, 52))  mode ^= 00020;
+		else if (in_box(398, 570, 142, 52))  mode ^= 00010;
+		else if (in_box(176, 640, 88, 52))   mode ^= 00004;
+		else if (in_box(276, 640, 106, 52))  mode ^= 00002;
+		else if (in_box(398, 640, 142, 52))  mode ^= 00001;
+		else if (in_box(158, 710, 142, 52))  mode ^= 01000;
+		else if (in_box(316, 710, 142, 52))  mode ^= 02000;
+		else if (in_box(474, 710, 142, 52))  mode ^= 04000;
+	}
+	chmod(file1, mode);
+}
+
