@@ -29,11 +29,30 @@
 
 #include "browse.h"
 #include "types.h"
+#include "boot.h"
 #include "fb.h"
 
 struct dir_list *current = NULL;
 struct dir_list *lvs = NULL;
 struct str_list *lv_sets = NULL;
+
+// protected from access so that people can't
+// inadvertently kill bootie or webOS
+char *immutable_files[] = {
+	"/mnt/boot/boot.bin",
+	"/mnt/boot/uImage",
+	"/mnt/boot/bin",
+	"/mnt/boot/dev",
+	"/mnt/boot/etc",
+	"/mnt/boot/lib",
+	"/mnt/boot/proc",
+	"/mnt/boot/realroot",
+	"/mnt/boot/sbin",
+	"/mnt/boot/sys",
+	"/mnt/boot/usr",
+	"/mnt/boot/var",
+	"/mnt/firmware"
+};
 
 int is_hidden(const struct dirent *);
 int is_lv(const struct dirent *);
@@ -167,6 +186,8 @@ void copy_file(const char *srcpath, const char *destpath) {
 	char cmd[2*PATH_MAX + 8];
 	int code;
 
+	if (is_immutable(destpath)) return;
+
 	stprintf("from: %s", srcpath);
 	stprintf("to: %s", destpath);
 
@@ -179,6 +200,9 @@ void move_file(const char *srcpath, const char *destpath) {
 	char cmd[2*PATH_MAX + 4];
 	int code;
 
+	if (is_immutable(srcpath)) return;
+	if (is_immutable(destpath)) return;
+
 	stprintf("from: %s", srcpath);
 	stprintf("to: %s", destpath);
 
@@ -189,4 +213,19 @@ void move_file(const char *srcpath, const char *destpath) {
 
 int file_mode(int num) {
 	return current->stats[num]->st_mode & 07777;
+}
+
+int is_immutable(const char *name) {
+	for (int i = 0; i < ARRAY_SIZE(immutable_files); ++i)
+		if (!strncasecmp(name, immutable_files[i],
+		strlen(immutable_files[i]))) {
+			steprintf("%s is on the immutablity list", name);
+			return 1;
+		}
+
+	return 0;
+}
+
+void delete_file(const char *path) {
+	if (!is_immutable(path)) unlink(path);
 }

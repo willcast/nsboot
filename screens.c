@@ -476,7 +476,7 @@ void task_menu(const char *file1) {
 				copy_file(file1, file2);
 			}
 		} else if (in_box(291, 338, 313, 70) && confirm("delete file permanently")) {
-			unlink(file1);
+			delete_file(file1);
 			done = 1;
 		} else if (in_box(16, 424, 394, 70)) {
 			do {

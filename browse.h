@@ -56,7 +56,10 @@ int lv_set_count(void);
 
 int is_android(char *);
 
+int is_immutable(const char *);
+
 void copy_file(const char *, const char *);
 void move_file(const char *, const char *);
+void delete_file(const char *);
 
 #endif
