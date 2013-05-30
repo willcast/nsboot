@@ -19,6 +19,7 @@
 
 #include <sys/mount.h>
 #include <sys/stat.h>
+#include <sys/reboot.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <ctype.h>
@@ -103,15 +104,23 @@ void umount_lv(const char *lv) {
 }
 
 void wipe_lv(const char *lv) {
-	char cmd[PATH_MAX];
+	char cmd[PATH_MAX], *type;
 	int code;
 
 	if (!is_lv_mounted("root")) mount_lv("root");
 	umount_lv(lv);
 
-	stprintf("making ext4 filesystem on volume %s", lv);
+	if (!strcmp(type, "swap"))
+		snprintf(cmd, sizeof(cmd), "mkswap /dev/store/%s", lv);
+	else if (!strcmp(type, "msdos") || !strcmp(type, "vfat"))
+		snprintf(cmd, sizeof(cmd), "mkdosfs /dev/store/%s", lv);
+	else if (!strncmp(type, "ext", 3))
+		sprintf(cmd, "mke2fs -t %s /dev/store/%s", type, lv);
+	else
+		sprintf(cmd, "mke2fs -t ext4 /dev/store/%s", lv);
 
-	sprintf(cmd, "mkfs.ext4 /dev/store/%s", lv);
+	stprintf("making %s filesystem on volume %s", type, lv);
+
 	if (code = WEXITSTATUS(system(cmd)))
 		steprintf("mkfs invocation failed with exit code %d", code);
 }
@@ -642,9 +651,13 @@ void symlink_binaries(void) {
 		stperror("symlink /lib failed");
 	if (symlink("/mnt/root/bin/resizefat", "/bin/resizefat") == -1)
 		stperror("symlink resizefat failed");
-	if (symlink("/mnt/root/sbin/mke2fs.e2fsprogs", "/bin/mkfs.ext4") == -1)
-		stperror("symlink mkfs.ext4 failed");
-	if (symlink("/mnt/root/sbin/dosfsck", "/bin/dosfsck"))
+	if (symlink("/mnt/root/sbin/mke2fs.e2fsprogs", "/bin/mke2fs") == -1)
+		stperror("symlink mke2fs failed");
+	if (symlink("/mnt/root/sbin/e2fsck.e2fsprogs", "/bin/e2fsck") == -1)
+		stperror("symlink e2fsck failed");
+	if (symlink("/mnt/root/sbin/resize2fs.e2fsprogs", "/bin/resize2fs") == -1)
+		stperror("symlink resize2fs failed");
+	if (symlink("/mnt/root/usr/sbin/dosfsck", "/bin/dosfsck"))
 		stperror("symlink dosfsck failed");
 }
 
@@ -744,4 +757,36 @@ char * get_lv_fstype(const char *lv) {
 	stprintf("blkid detected fstype of %s", ret);
 
 	return strdup(ret);
+}
+
+void check_lv(const char *lv) {
+	int code;
+	char cmd[PATH_MAX], *type;
+
+	umount_lv(lv);
+
+	type = get_lv_fstype(lv);
+	if (!strcmp(type, "none") || !strcmp(type, "swap")) return;
+	else if (!strncmp(type, "ext", 3))
+		snprintf(cmd, sizeof(cmd), "e2fsck -fy /dev/store/%s", lv);
+	else if (!strcmp(type, "vfat") || !strcmp(type, "msdos"))
+		snprintf(cmd, sizeof(cmd), "dosfsck -a /dev/store/%s", lv);
+	else {
+		steprintf("error: unknown fstype %s", type);
+		return;
+	}
+
+	code = WEXITSTATUS(system(cmd));
+	if (code > 7) {
+		steprintf("error: fsck quit with abnormal code %d", code);
+		return;
+	}
+	if (code & 1) status_error("warning: errors were fixed");
+	if (code & 4) status_error("warning: errors were left unfixed");
+	if (code & 2) {
+		status_error("system restart was indicated, will reboot in 2s");
+		sync();
+		reboot(RB_AUTOBOOT);
+	}
+	return;
 }

@@ -210,11 +210,13 @@ void util_menu(void) {
 		text_box("create volume tarchive", 16,418, 412,52, 2,
 			0xFFFFFFFF,0xFF0000FF,0xFFFFFFFF);
 		text_box("run shell command", 444,418, 322,52, 2,
-			0xFFFFFFFF,0xFF00FF00,0xFFFFFFFF);
+			0xFF00FF00,0xFF000000,0xFFC0C0C0);
 		text_box("create volume set", 16,486, 322,52, 2,
 			0xFF000000,0xFFFFFFFF,0xFF000000);
 		text_box("create volume", 354,486, 250,52, 2,
 			0xFF000000,0xFFFFFFFF,0xFF000000);
+		text_box("check volume", 620,486, 232,52, 2,
+			0xFFFFFFFF,0xFF00C000,0xFFFFFFFF);
 
 		ts_read(&ts_x, &ts_y);
 		if (in_box(16, 128, 124, 70)) ret = 1;
@@ -231,11 +233,15 @@ void util_menu(void) {
 		} else if (in_box(16, 282, 322, 52)) {
 			free_boot_items();
 			scan_boot_lvs();
-		} else if (in_box(354, 282, 232, 52))
-			mount_lv(select_lv(0));
-		else if (in_box(602, 282, 304, 52))
-			mount_lv_set(select_lv_set());
-		else if (in_box(16, 350, 250, 52)) {
+		} else if (in_box(354, 282, 232, 52)) {
+			lv = select_lv(0);
+			if (lv == NULL) continue;
+			mount_lv(lv);
+		} else if (in_box(602, 282, 304, 52)) {
+			lv_set = select_lv_set();
+			if (lv_set == NULL) continue;
+			mount_lv_set(lv_set);
+		} else if (in_box(16, 350, 250, 52)) {
 			lv = select_lv(1);
 			if (lv == NULL) continue;
 			if (confirm("format volume")) wipe_lv(lv);
@@ -243,9 +249,11 @@ void util_menu(void) {
 			lv_set = select_lv_set();
 			if (lv_set == NULL) continue;
 			if (confirm("format volume set")) wipe_lv_set(lv_set);
-		} else if (in_box(620, 350, 268, 52))
-			umount_lv(select_lv(0));
-		else if (in_box(16, 418, 415, 52)) {
+		} else if (in_box(620, 350, 268, 52)) {
+			lv = select_lv(0);
+			if (lv == NULL) continue;
+			umount_lv(lv);
+		} else if (in_box(16, 418, 415, 52)) {
 			lv = select_lv(0);
 			if (lv == NULL) continue;
 			bname = text_input("Enter the name for your backup:");
@@ -276,6 +284,10 @@ void util_menu(void) {
 			sys = size_screen("for new volume", 256, 10240, 256);
 			if (confirm("create volume")) new_lv(lv, sys);
 			free(lv);
+		} else if (in_box(620, 486, 232, 52)) {
+			lv = select_lv(0);
+			if (lv == NULL) continue;
+			if (confirm("system may reboot on its own")) check_lv(lv);
 		}
 	}
 }
@@ -727,7 +739,6 @@ char * text_input(const char *prompt) {
 		if (in_box(912, 384, 52, 52)) {
 			if ((output[cur_ch] == '\0') && cur_ch) --cur_ch;
 			output[cur_ch] = '\0';
-			if (cur_ch) --cur_ch;
 		} else if (in_box(16, 512, 52, 52))
 			caps = !caps;
 		else if (in_box(784, 512, 116, 52))
