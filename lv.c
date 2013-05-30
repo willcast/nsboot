@@ -1,4 +1,4 @@
- /*
+/*
     Copyright (C) 2013 Will Castro
 
     This file is part of nsboot.
@@ -35,19 +35,20 @@
 #include "install.h"
 
 void mount_lv(const char *lv) {
-	char dev[PATH_MAX], mtpt[PATH_MAX];
+	char cmd[PATH_MAX];
 	char *type;
+	int code;
 
 	stprintf("mounting volume %s", lv);
 
-	sprintf(dev, "/dev/store/%s", lv);
-	sprintf(mtpt, "/mnt/%s", lv);
-
-	mkdir(mtpt, 0755);
+	snprintf(cmd, sizeof(cmd), "/mnt/%s", lv);
+	mkdir(cmd, 0755);
 
 	type = get_lv_fstype(lv);
-
-	mount(dev, mtpt, type, MS_SILENT, NULL);
+	snprintf(cmd, sizeof(cmd), "mount -t %s /dev/store/%s /mnt/%s", type, lv, lv);
+	code = WEXITSTATUS(system(cmd));
+	if (code && (code != 255))
+		steprintf("mount command failed with code %d", code);
 }
 
 // /proc/mounts displays the real device location, not the symbolic
@@ -76,23 +77,28 @@ int is_lv_mounted(const char *lv) {
 }
 
 void umount_lv(const char *lv) {
-	char target[64];
+	char cmd[PATH_MAX];
 	char *dash;
+	int code;
 
 	stprintf("unmounting volume %s", lv);
 
 	// Unmount it if it is mounted directly under /mnt.
-	sprintf(target, "/mnt/%s", lv);
+	sprintf(cmd, "umount /mnt/%s", lv);
 
-	while (!umount(target)) ;
+	do {
+		code = WEXITSTATUS(system(cmd));
+	} while (!code);
 
 	// Unmount it if it is mounted one level deep (aka if
 	// it was mounted by mount_lv_set()).
-	dash = strchr(target, '-');
+	dash = strchr(cmd, '-');
 	if (dash == NULL) return;
 
 	*dash = '/';
-	while (!umount(target)) ;
+	do {
+		code = WEXITSTATUS(system(cmd));
+	} while (!code);
 }
 
 void wipe_lv(const char *lv) {
@@ -259,7 +265,11 @@ void resize_lv(const char *lv, enum resizemode mode, long arg) {
 	} else if (!strncmp(type, "ext", 3)) {
 		stprintf("resizing %s filesystem", type);
 		sprintf(cmd, "resize2fs /dev/store/%s %ld'M'", lv, newsize);
-		if (code = WEXITSTATUS(system(cmd))) {
+		code = WEXITSTATUS(system(cmd));
+
+		// nobody seems to have documented 134 but the fs size changes and
+		// no errors are found by e2fsck so I assume it is benign.
+		if (code && (code != 134)) {
 			steprintf("resize2fs invocation failed with code %d", code);
 			return;
 		}
@@ -292,11 +302,11 @@ long get_free_vg_space(void) {
 	}
 	if (fgets(line, sizeof(line), lvm_fp) == NULL) {
 		stperror("error reading lvm vgs pipeline");
-		fclose(lvm_fp);
+		pclose(lvm_fp);
 		return -1;
 	}
 
-	fclose(lvm_fp);
+	pclose(lvm_fp);
 	ret = atol(line);
 
 	stprintf("found %ld MiB of free LVM space", ret);
@@ -317,11 +327,11 @@ long get_lv_size(const char *lv) {
 	}
 	if (fgets(line, sizeof(line), lvm_fp) == NULL) {
 		stperror("error reading lvdisplay pipeline");
-		fclose(lvm_fp);
+		pclose(lvm_fp);
 		return -1;
 	}
 
-	fclose(lvm_fp);
+	pclose(lvm_fp);
 	ret = atol(line) / 2048;
 
 	stprintf("current size of volume %s is %ld MiB", lv, ret);
@@ -368,11 +378,11 @@ char * get_lv_fstype(const char *lv) {
 
 	if (fgets(cmd, sizeof(cmd), blkid_fp) == NULL) {
 		stperror("error reading from blkid pipe");
-		fclose(blkid_fp);
+		pclose(blkid_fp);
 		return "?";
 	}
 
-	fclose(blkid_fp);
+	pclose(blkid_fp);
 
 	// chomp trailing newline just in case
 	ret = strchr(cmd, '\n');
@@ -440,7 +450,7 @@ long get_free_lv_space(const char *lv) {
 
 	mount_lv(lv);
 
-	snprintf(cmd, sizeof(cmd), "df -m /dev/store/%s | awk '{print $4}'", lv);
+	snprintf(cmd, sizeof(cmd), "df -aPm | grep %s | tail -n1 | xargs | cut -d' ' -f4", lv);
 	df_fp = popen(cmd, "r");
 
 	if (df_fp == NULL) {
@@ -450,13 +460,20 @@ long get_free_lv_space(const char *lv) {
 
 	if (fgets(cmd, sizeof(cmd), df_fp) == NULL) {
 		stperror("can't read from df pipe");
-		fclose(df_fp);
+		pclose(df_fp);
+		return -1;
+	}
+	pclose(df_fp);
+
+	if (cmd[0] == '\0') {
+		steprintf("df returned nothing");
 		return -1;
 	}
 
-	fclose(df_fp);
 	ret = atol(cmd);
+	if (!ret) status_error(cmd);
 
 	stprintf("found %ld MiB of free space on volume %s", ret, lv);
+
 	return ret;
 }

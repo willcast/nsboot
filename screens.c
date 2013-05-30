@@ -260,7 +260,7 @@ void util_menu(void) {
 		} else if (in_box(354, 486, 250, 52)) {
 			lv = text_input("enter volume name - example: arch-root");
 			if ((lv == NULL) || (lv[0] == '\0')) continue;
-			sys = size_screen("for new volume", 128, 10240);
+			sys = size_screen("for new volume", 8, 65536);
 			if (confirm("create volume")) new_lv(lv, sys);
 			free(lv);
 		} else if (in_box(620, 486, 232, 52)) {
@@ -271,7 +271,7 @@ void util_menu(void) {
 			lv = select_lv(0);
 			if (lv == NULL) continue;
 			snprintf(pwd, sizeof(pwd), "volume %s current size %ld MiB", lv, get_lv_size(lv));
-			sys = size_screen(pwd, 128, 10240);
+			sys = size_screen(pwd, 8, 65536);
 			if (confirm("resize volume, preserving data")) resize_lv(lv, RS_SET, sys);
 		}
 	}
@@ -337,7 +337,7 @@ void info_screen(void) {
 			stperror("error piping from date cmd");
 			return;
 		}
-		fclose(fp);
+		pclose(fp);
 
 		text("information", 16,16, 4,4, 0xFFFFFFFF, 0xFF000000);
 		text("nsboot by willcast, 2013", 16,104, 2,2, 0xFF808080, 0xFF000000);

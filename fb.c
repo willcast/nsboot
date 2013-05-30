@@ -165,18 +165,18 @@ void text_box(const char *s, int x, int y, int w, int h, int z, uint32_t tc, uin
 
 void status(char *str) {
 	++stat_page;
-	stat_page %= 6;
+	stat_page %= 16;
 
-	fill_rect(0,FBHEIGHT - 108 + stat_page*18, FBWIDTH,18, 0xFF4040C0);
-	text(str, 8,FBHEIGHT - 108 + stat_page*18, 1, 1, 0xFFC0C0C0,0xFF4040C0);
+	fill_rect(0,FBHEIGHT - 288 + stat_page*18, FBWIDTH,18, 0xFF4040C0);
+	text(str, 8,FBHEIGHT - 288 + stat_page*18, 1, 1, 0xFFC0C0C0,0xFF4040C0);
 }
 
 void status_error(char *str) {
 	++stat_page;
-	stat_page %= 6;
+	stat_page %= 16;
 
-	fill_rect(0,FBHEIGHT - 108 + stat_page*18, FBWIDTH,18, 0xFFFF0000);
-	text(str, 8,FBHEIGHT - 108 + stat_page*18, 1, 1, 0xFFFFFFFF,0xFFFF0000);
+	fill_rect(0,FBHEIGHT - 288 + stat_page*18, FBWIDTH,18, 0xFFFF0000);
+	text(str, 8,FBHEIGHT - 288 + stat_page*18, 1, 1, 0xFFFFFFFF,0xFFFF0000);
 
 	vibrate(160);
 	usleep(240000);
