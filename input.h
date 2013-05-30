@@ -29,6 +29,7 @@ char * select_lv_set(void);
 char * text_input(const char *);
 
 int confirm(const char *);
-long size_screen(const char *, long, long, int);
+long size_screen(const char *, long, long);
+long num_input(const char *);
 
 #endif

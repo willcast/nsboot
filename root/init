@@ -7,7 +7,9 @@
 # This code is taken from https://github.com/slashbeast/better-initramfs
 # and stripped down (by Arch Linux ARM) to the be tiny and easy to read.
 
-PATH=/bin:/sbin:/usr/bin:/usr/sbin
+EVENT=/dev/event2
+PATH=/bin
+
 /bin/busybox --install -s
 
 echo '[init] Mounting virtual filesystems'
@@ -27,10 +29,8 @@ rm -rf /etc/lvm/cache
 lvm vgchange -a y
 lvm vgmknodes
 
-echo "[init] Launching ts_srv"
-/bin/tssrv&
-
-EVENT=/dev/event2
+echo '[init] Launching ts_srv'
+tssrv&
 
 cd /
 echo '[init] Launching nsboot'

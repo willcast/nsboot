@@ -128,7 +128,7 @@ void installer_menu(void) {
 		} else if (in_box(16, 350, 537, 52)) {
 			filename = select_file(EXT, ".gz");
 			if (filename == NULL) continue;
-                        size = size_screen("for new volume", 1728, 8192, 256);
+                        size = size_screen("for new volume", 1728, 8192);
 			if (confirm("install .tar.gz file"))
                                 install_native(filename, NULL, size);
 		} else if (in_box(16, 418, 628, 52)) {
@@ -252,15 +252,15 @@ void util_menu(void) {
 		} else if (in_box(16, 486, 322, 52)) {
 			lv_set = text_input("enter volume set name - example: android42");
 			if ((lv_set == NULL) || (lv_set[0] == '\0')) continue;
-			sys = size_screen("for system volume", 256, 512, 16);
-			dat = size_screen("for data volume", 200, 512, 16);
-			cac = size_screen("for cache volume", 192, 256, 8);
+			sys = size_screen("for system volume", 240, 640);
+			dat = size_screen("for data volume", 200, 2048);
+			cac = size_screen("for cache volume", 160, 256);
 			if (confirm("create volume set")) new_lv_set(lv_set, sys, dat, cac);
 			free(lv_set);
 		} else if (in_box(354, 486, 250, 52)) {
 			lv = text_input("enter volume name - example: arch-root");
 			if ((lv == NULL) || (lv[0] == '\0')) continue;
-			sys = size_screen("for new volume", 256, 10240, 256);
+			sys = size_screen("for new volume", 128, 10240);
 			if (confirm("create volume")) new_lv(lv, sys);
 			free(lv);
 		} else if (in_box(620, 486, 232, 52)) {
@@ -271,7 +271,7 @@ void util_menu(void) {
 			lv = select_lv(0);
 			if (lv == NULL) continue;
 			snprintf(pwd, sizeof(pwd), "volume %s current size %ld MiB", lv, get_lv_size(lv));
-			sys = size_screen(pwd, 256, 10240, 256);
+			sys = size_screen(pwd, 128, 10240);
 			if (confirm("resize volume, preserving data")) resize_lv(lv, RS_SET, sys);
 		}
 	}

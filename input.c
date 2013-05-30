@@ -343,37 +343,76 @@ void boot_menu(void) {
 	free(bw);
 }
 
-long size_screen(const char *msg, long min, long max, int step) {
-	int ts_x, ts_y;
-	int ret = 0;
+long size_screen(const char *msg, long min, long max) {
 	long size;
-	char size_str[64];
+	do {
+		size = num_input(msg);
+		if (size < min) steprintf("size too small, lower limit is %ld", min);
+		if (size > max) steprintf("size too big, upper limit is %ld", max);
+	} while ((size < min) || (size > max));
+	return size;
+}
 
-	size = min;
+long num_input(const char *prompt) {
+	int ts_x, ts_y;
+	int done = 0, cur_ch = 0;
+	char buf[12];
 
-	while (!ret) {
+	memset(buf, '\0', sizeof(buf));
+
+	while (!done) {
+		if (cur_ch > sizeof(buf) - 2)
+			cur_ch = sizeof(buf) - 2;
+
 		clear_screen();
 
-		snprintf(size_str, sizeof(size_str), "size: %ld MiB", size);
+		text(prompt, 16,16, 2,2, 0xFFFFFFFF, 0xFF000000);
+		text(buf, 16,68, 6,6, 0xFFFFFFFF, 0xFF000000);
 
-		text("select volume size", 16,16, 4,4, 0xFFFFFFFF,0xFF000000);
-		text(msg, 16,104, 2,2, 0xFF808080, 0xFF000000);
-		text(size_str, 16,192, 2,2, 0xFF808080, 0xFF000000);
-
-		text_box("okay", 16,280, 160,70, 3, 0xFFFFFFFF,0xFF808080,0xFFFFFFFF);
-		text_box("decrease", 16,388, 232,70, 3, 0xFF000000,0xFFFFFFFF,0xFF000000);
-		text_box("increase", 264,388, 232,70, 3, 0xFF000000,0xFFFFFFFF,0xFF000000);
+		text_box("7", 16,192, 124,124, 6,
+			0xFFFFFFFF,0xFF808080,0xFFFFFFFF);
+		text_box("8", 156,192, 124,124, 6,
+			0xFFFFFFFF,0xFF808080,0xFFFFFFFF);
+		text_box("9", 296,192, 124,124, 6,
+			0xFFFFFFFF,0xFF808080,0xFFFFFFFF);
+		text_box("4", 16,332, 124,124, 6,
+			0xFFFFFFFF,0xFF808080,0xFFFFFFFF);
+		text_box("5", 156,332, 124,124, 6,
+			0xFFFFFFFF,0xFF808080,0xFFFFFFFF);
+		text_box("6", 296,332, 124,124, 6,
+			0xFFFFFFFF,0xFF808080,0xFFFFFFFF);
+		text_box("1", 16,472, 124,124, 6,
+			0xFFFFFFFF,0xFF808080,0xFFFFFFFF);
+		text_box("2", 156,472, 124,124, 6,
+			0xFFFFFFFF,0xFF808080,0xFFFFFFFF);
+		text_box("3", 296,472, 124,124, 6,
+			0xFFFFFFFF,0xFF808080,0xFFFFFFFF);
+		text_box("back", 16,612, 124,124, 1,
+			0xFFFFFFFF,0xFF000000,0xFFFFFFFF);
+		text_box("0", 156,612, 124,124, 6,
+			0xFFFFFFFF,0xFF808080,0xFFFFFFFF);
+		text_box("enter", 296,612, 124,124, 1,
+			0xFFFFFFFF,0xFF000000,0xFFFFFFFF);
 
 		ts_read(&ts_x, &ts_y);
 
-		if (in_box(16, 280, 160, 70)) ret = 1;
-		else if (in_box(16, 388, 232, 70) && (size - step >= min))
-			size -= step;
-		else if (in_box(264, 388, 232, 70) && (size + step <= max))
-			size += step;
+		if (in_box(16, 174, 124, 124)) buf[cur_ch++] = '7';
+		else if (in_box(156, 192, 124, 124)) buf[cur_ch++] = '8';
+		else if (in_box(296, 192, 124, 124)) buf[cur_ch++] = '9';
+		else if (in_box(16, 332, 124, 124)) buf[cur_ch++] = '4';
+		else if (in_box(156, 332, 124, 124)) buf[cur_ch++] = '5';
+		else if (in_box(296, 332, 124, 124)) buf[cur_ch++] = '6';
+		else if (in_box(16, 472, 124, 124)) buf[cur_ch++] = '1';
+		else if (in_box(156, 472, 124, 124)) buf[cur_ch++] = '2';
+		else if (in_box(296, 472, 124, 124)) buf[cur_ch++] = '3';
+		else if (in_box(16, 612, 124, 124)) {
+			if ((buf[cur_ch] == '\0') && cur_ch) --cur_ch;
+			buf[cur_ch] = '\0';
+		} else if (in_box(156, 612, 124, 124)) buf[cur_ch++] = '0';
+		else if (in_box(296, 612, 124, 124)) done = 1;
 	}
 
-	return size;
+	return atol(buf);
 }
 
 char * text_input(const char *prompt) {
@@ -405,13 +444,19 @@ char * text_input(const char *prompt) {
 		text_box("back", 912,384, 52,52, 1,
 			0xFF000000,0xFFFFFFFF,0xFF000000);
 		text_box("caps", 16,512, 52,52, 1,
-			0xFF000000,0xFFFFFFFF,0xFF000000);
+			caps ? 0xFFFFFFFF : 0xFF000000,
+			caps ? 0xFF000000 : 0xFFFFFFFF,
+			caps ? 0xFFFFFFFF : 0xFF000000);
 		text_box("enter", 784,512, 116,52, 2,
 			0xFF000000,0xFFFFFFFF,0xFF000000);
 		text_box("shift", 16,576, 52,52, 1,
-			0xFF000000,0xFFFFFFFF,0xFF000000);
+			shift ? 0xFFFFFFFF : 0xFF000000,
+			shift ? 0xFF000000 : 0xFFFFFFFF,
+			shift ? 0xFFFFFFFF : 0xFF000000);
 		text_box("shift", 784,576, 116,52, 2,
-			0xFF000000,0xFFFFFFFF,0xFF000000);
+			shift ? 0xFFFFFFFF : 0xFF000000,
+			shift ? 0xFF000000 : 0xFFFFFFFF,
+			shift ? 0xFFFFFFFF : 0xFF000000);
 		text_box("", 208,640, 448,52, 1,
 			0xFF000000,0xFFFFFFFF,0xFF000000);
 
