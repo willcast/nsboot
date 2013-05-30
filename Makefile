@@ -23,3 +23,13 @@ uImage: nsboot uKernel.test
 
 boot: uImage
 	novacom boot mem:// < uImage
+
+scp: uImage
+	ssh root@hptp1 mount -o remount,rw /boot/moboot
+	scp uImage root@hptp1:/boot/moboot/uImage.nsboot
+	ssh root@hptp1 reboot
+
+push: uImage
+	adb shell mount -o remount,rw /boot
+	adb push uImage /boot/uImage.nsboot
+	adb reboot

@@ -17,31 +17,18 @@
     along with nsboot.  If not, see <http://www.gnu.org/licenses/>
 */
 
-#ifndef NSBOOT_INSTALL_H
-#define NSBOOT_INSTALL_H
+#ifndef NSBOOT_LVSET_H
+#define NSBOOT_LVSET_H
 
-#define WIPE_SYSTEM 	0x01
-#define WIPE_DATA	0x02
-#define WIPE_CACHE	0x04
-#define INST_MOBOOT	0x08
+// Android 3 volume group functions
+void mount_lv_set(const char *);
+void umount_lv_set(const char *);
+void new_lv_set(const char *, int, int, int);
+void wipe_lv_set(const char *);
+void delete_lv_set(const char *);
 
-// Utility functions
-int test_file(const char *);
-
-void install_native(const char *, const char *, int);
-void install_android(const char *, const char *, int);
-void install_uimage(char *);
-void install_tar(char *);
-
-char * deduce_lv(const char *);
 char * deduce_lv_set(const char *);
 void deduce_lv_set_size(const char *, int *, int *, int *);
-
-void resize_media(long);
-
-void symlink_binaries(void);
-
-void replace_moboot(void);
 
 #endif
 

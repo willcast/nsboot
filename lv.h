@@ -17,31 +17,34 @@
     along with nsboot.  If not, see <http://www.gnu.org/licenses/>
 */
 
-#ifndef NSBOOT_INSTALL_H
-#define NSBOOT_INSTALL_H
+#ifndef NSBOOT_LV_H
+#define NSBOOT_LV_H
 
-#define WIPE_SYSTEM 	0x01
-#define WIPE_DATA	0x02
-#define WIPE_CACHE	0x04
-#define INST_MOBOOT	0x08
+enum resizemode {
+	RS_GROW,
+	RS_SHRINK,
+	RS_SET,
+	RS_RECLAIM,
+	RS_FREE
+};
 
-// Utility functions
-int test_file(const char *);
-
-void install_native(const char *, const char *, int);
-void install_android(const char *, const char *, int);
-void install_uimage(char *);
-void install_tar(char *);
+// Logical volume functions
+void mount_lv(const char *);
+void umount_lv(const char *);
+void wipe_lv(const char *);
+void delete_lv(const char *);
+void new_lv(const char *, const long);
+void lv_to_tgz(const char *, const char *);
+void check_lv(const char *);
+void resize_lv(const char *, enum resizemode, long);
 
 char * deduce_lv(const char *);
-char * deduce_lv_set(const char *);
-void deduce_lv_set_size(const char *, int *, int *, int *);
-
-void resize_media(long);
-
-void symlink_binaries(void);
-
-void replace_moboot(void);
+long get_free_vg_space(void);
+long get_free_lv_space(const char *);
+long get_lv_size(const char *);
+int is_lv_mounted(const char *);
+int lv_exists(const char *);
+char * get_lv_fstype(const char *);
 
 #endif
 

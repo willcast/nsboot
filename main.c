@@ -35,7 +35,9 @@
 #include "touch.h"
 #include "screens.h"
 #include "boot.h"
-#include "install.h"
+#include "lv.h"
+
+void symlink_binaries(void);
 
 int main(int argc, char **argv) {
 	int i;
@@ -87,6 +89,25 @@ int main(int argc, char **argv) {
 	exit(0);
 }
 
-int cmpstringp(const void *p1, const void *p2) {
-	return strcasecmp(*(char*const*)p1, *(char*const*)p2);
+void symlink_binaries(void) {
+	if (symlink("/mnt/root/usr/lib", "/usr/lib") == -1)
+		stperror("symlink /usr/lib failed");
+	if (symlink("/mnt/root/lib", "/lib") == -1)
+		stperror("symlink /lib failed");
+	unlink("/bin/resizefat");
+	if (symlink("/mnt/root/bin/resizefat", "/bin/resizefat") == -1)
+		stperror("symlink resizefat failed");
+	unlink("/bin/mke2fs");
+	if (symlink("/mnt/root/sbin/mke2fs.e2fsprogs", "/bin/mke2fs") == -1)
+		stperror("symlink mke2fs failed");
+	unlink("/bin/e2fsck");
+	if (symlink("/mnt/root/sbin/e2fsck.e2fsprogs", "/bin/e2fsck") == -1)
+		stperror("symlink e2fsck failed");
+	unlink("/bin/resize2fs");
+	if (symlink("/mnt/root/sbin/resize2fs", "/bin/resize2fs") == -1)
+		stperror("symlink resize2fs failed");
+	unlink("/bin/dosfsck");
+	if (symlink("/mnt/root/usr/sbin/dosfsck", "/bin/dosfsck") == -1)
+		stperror("symlink dosfsck failed");
 }
+

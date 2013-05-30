@@ -31,6 +31,7 @@
 #include "boot.h"
 #include "types.h"
 #include "install.h"
+#include "lv.h"
 
 const char *keepable_args[] = { "fbcon=", "klog=", "klog_len=", "nduid=",
 	"androidboot.serialno=", "boardtype=" };

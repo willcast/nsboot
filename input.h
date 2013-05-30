@@ -17,31 +17,18 @@
     along with nsboot.  If not, see <http://www.gnu.org/licenses/>
 */
 
-#ifndef NSBOOT_INSTALL_H
-#define NSBOOT_INSTALL_H
+#ifndef NSBOOT_INPUT_H
+#define NSBOOT_INPUT_H
 
-#define WIPE_SYSTEM 	0x01
-#define WIPE_DATA	0x02
-#define WIPE_CACHE	0x04
-#define INST_MOBOOT	0x08
+void boot_menu(void);
+void info_screen(void);
 
-// Utility functions
-int test_file(const char *);
+char * select_file(enum filter_spec, char *);
+char * select_lv(int);
+char * select_lv_set(void);
+char * text_input(const char *);
 
-void install_native(const char *, const char *, int);
-void install_android(const char *, const char *, int);
-void install_uimage(char *);
-void install_tar(char *);
-
-char * deduce_lv(const char *);
-char * deduce_lv_set(const char *);
-void deduce_lv_set_size(const char *, int *, int *, int *);
-
-void resize_media(long);
-
-void symlink_binaries(void);
-
-void replace_moboot(void);
+int confirm(const char *);
+long size_screen(const char *, long, long, int);
 
 #endif
-

@@ -20,22 +20,12 @@
 #ifndef NSBOOT_SCREENS_H
 #define NSBOOT_SCREENS_H
 
-void start_screen(void);
 void main_menu(void);
 void installer_menu(void);
-void boot_menu(void);
 void util_menu(void);
 void info_screen(void);
 
-char * select_file(enum filter_spec, char *);
-char * select_lv(int);
-char * select_lv_set(void);
-char * text_input(const char *);
-
 void task_menu(const char *);
-
-int confirm(const char *);
-long size_screen(const char *, long, long, int);
 
 int android_options(void);
 
