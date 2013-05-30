@@ -21,6 +21,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <ctype.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -42,6 +43,7 @@ int test_file(const char *path) {
 
 void mount_lv(const char *lv) {
 	char dev[PATH_MAX], mtpt[PATH_MAX];
+	char *type;
 
 	stprintf("mounting volume %s", lv);
 
@@ -50,9 +52,9 @@ void mount_lv(const char *lv) {
 
 	mkdir(mtpt, 0755);
 
-	// only two relevant fstypes on HPTP.
-	mount(dev, mtpt, "ext4", MS_SILENT, NULL);
-	mount(dev, mtpt, "vfat", MS_SILENT, NULL);
+	type = get_lv_fstype(lv);
+
+	mount(dev, mtpt, type, MS_SILENT, NULL);
 }
 
 // /proc/mounts displays the real device location, not the symbolic
@@ -696,4 +698,50 @@ void replace_moboot(void) {
 		stperror("error symlinking nsboot as main bootloader");
 		status_error("WARNING: YOU MAY NEED TO USE NOVACOM TO REINSTALL A BOOTLOADER");
 	}
+}
+
+char * get_lv_fstype(const char *lv) {
+	FILE *blkid_fp;
+	char cmd[PATH_MAX], *ret, *quote;
+
+	stprintf("determining fstype for lv %s", lv);
+
+	snprintf(cmd, sizeof(cmd), "blkid /dev/store/%s", lv);
+	blkid_fp = popen(cmd, "r");
+	if (blkid_fp == NULL) {
+		stperror("error opening pipe to blkid");
+		return "?";
+	}
+
+	if (fgets(cmd, sizeof(cmd), blkid_fp) == NULL) {
+		stperror("error reading from blkid pipe");
+		fclose(blkid_fp);
+		return "?";
+	}
+
+	fclose(blkid_fp);
+
+	// chomp trailing newline just in case
+	ret = strchr(cmd, '\n');
+	if (ret != NULL) *ret = '\0';
+
+	// only care about fstype
+	ret = strstr(cmd, "TYPE=");
+	if (ret == NULL) return "none";
+
+	// start right after 1st quote
+	ret = strchr(ret, '\"');
+	if (ret == NULL) return "none";
+	++ret;
+
+	// end right before 2nd quote
+	quote = strchr(ret, '\"');
+	if (quote != NULL) *quote = '\0';
+
+	for (int i = 0; i < strlen(ret); ++i)
+		ret[i] = tolower(ret[i]);
+
+	stprintf("blkid detected fstype of %s", ret);
+
+	return strdup(ret);
 }

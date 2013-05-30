@@ -39,6 +39,7 @@ void new_lv(const char *, const int);
 long get_free_lvm_space(void);
 long get_media_size(void);
 void lv_to_tgz(const char *, const char *);
+char * get_lv_fstype(const char *);
 
 // Android 3 volume group functions
 void mount_lv_set(const char *);
