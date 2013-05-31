@@ -33,13 +33,14 @@
 #include "fb.h"
 #include "lv.h"
 #include "install.h"
+#include "log.h"
 
 void mount_lv(const char *lv) {
 	char cmd[PATH_MAX];
 	char *type;
 	int code;
 
-	stprintf("mounting volume %s", lv);
+	logprintf("0mounting volume %s", lv);
 
 	snprintf(cmd, sizeof(cmd), "/mnt/%s", lv);
 	mkdir(cmd, 0755);
@@ -48,7 +49,7 @@ void mount_lv(const char *lv) {
 	snprintf(cmd, sizeof(cmd), "mount -t %s /dev/store/%s /mnt/%s", type, lv, lv);
 	code = WEXITSTATUS(system(cmd));
 	if (code && (code != 255))
-		steprintf("mount command failed with code %d", code);
+		logprintf("2mount command failed with code %d", code);
 }
 
 // /proc/mounts displays the real device location, not the symbolic
@@ -81,7 +82,7 @@ void umount_lv(const char *lv) {
 	char *dash;
 	int code;
 
-	stprintf("unmounting volume %s", lv);
+	logprintf("0unmounting volume %s", lv);
 
 	// Unmount it if it is mounted directly under /mnt.
 	sprintf(cmd, "umount /mnt/%s", lv);
@@ -106,7 +107,7 @@ void wipe_lv(const char *lv) {
 	int code;
 
 	if (!strcmp(lv, "root")) {
-		status_error("root volume may not be wiped");
+		logprintf("2%s", "root volume may not be wiped");
 		return;
 	}
 
@@ -122,10 +123,10 @@ void wipe_lv(const char *lv) {
 	else
 		sprintf(cmd, "mke2fs -t ext4 /dev/store/%s", lv);
 
-	stprintf("making %s filesystem on volume %s", type, lv);
+	logprintf("0making %s filesystem on volume %s", type, lv);
 
 	if (code = WEXITSTATUS(system(cmd)))
-		steprintf("mkfs invocation failed with exit code %d", code);
+		logprintf("2mkfs invocation failed with exit code %d", code);
 }
 
 void delete_lv(const char *lv) {
@@ -133,17 +134,17 @@ void delete_lv(const char *lv) {
 	int code;
 
 	if (!strcmp(lv, "root")) {
-		status_error("root volume may not be removed");
+		logprintf("2%s", "root volume may not be removed");
 		return;
 	}
 
-	stprintf("deleting volume %s", lv);
+	logprintf("0deleting volume %s", lv);
 
 	umount_lv(lv);
 
 	sprintf(cmd, "lvm lvremove -f store/%s", lv);
 	if (code = WEXITSTATUS(system(cmd)))
-		steprintf("lvremove invocation failed with exit code %d", code);
+		logprintf("2lvremove invocation failed with exit code %d", code);
 }
 
 void new_lv(const char *lv, const  long size_mb) {
@@ -158,11 +159,11 @@ void new_lv(const char *lv, const  long size_mb) {
 
 	if (space < size_mb) resize_lv("media", RS_FREE, size_mb);
 
-	stprintf("creating a volume named %s with a size of %ld MiB",
+	logprintf("0creating a volume named %s with a size of %ld MiB",
 		lv, size_mb);
 	sprintf(cmd, "lvm lvcreate -n %s -L %ld'M' store", lv, size_mb);
 	if (code = WEXITSTATUS(system(cmd)))
-		steprintf("lvcreate invocation failed with exit code %d", code);
+		logprintf("2lvcreate invocation failed with exit code %d", code);
 }
 
 int lv_exists(const char *lv) {
@@ -211,34 +212,34 @@ void resize_lv(const char *lv, enum resizemode mode, long arg) {
 	switch (mode) {
 	case RS_GROW:
 		newsize = oldsize + arg;
-		stprintf("growing volume %s to %ld MiB", lv, newsize);
+		logprintf("0growing volume %s to %ld MiB", lv, newsize);
 		break;
 	case RS_SHRINK:
 		newsize = oldsize - arg;
-		stprintf("shrinking volume %s to %ld MiB", lv, newsize);
+		logprintf("0shrinking volume %s to %ld MiB", lv, newsize);
 		break;
 	case RS_SET:
 		newsize = arg;
-		stprintf("resizing volume %s to %ld MiB", lv, newsize);
+		logprintf("0resizing volume %s to %ld MiB", lv, newsize);
 		break;
 	case RS_RECLAIM:
 		newsize = oldsize + space;
-		stprintf("reclaming %ld MiB of free space into volume %s", space, lv);
+		logprintf("0reclaming %ld MiB of free space into volume %s", space, lv);
 		break;
 	case RS_FREE:
 		newsize = oldsize + space - arg;
-		stprintf("making %ld MiB of space by shrinking volume %s", arg, lv);
+		logprintf("0making %ld MiB of space by shrinking volume %s", arg, lv);
 		break;
 	}
 
 	if (free < oldsize - newsize) {
-		steprintf("free space is too low to shrink, %ld MiB more is needed",
+		logprintf("2free space is too low to shrink, %ld MiB more is needed",
 			oldsize - newsize - free);
 		return;
 	}
 	if (strncmp(type, "ext", 3) || (newsize < oldsize)) umount_lv(lv);
 	if (!strcmp(lv, "root") && (newsize < oldsize)) {
-		status_error("root volume may not be shrunken");
+		logprintf("2%s", "root volume may not be shrunken");
 		return;
 	}
 
@@ -249,28 +250,28 @@ void resize_lv(const char *lv, enum resizemode mode, long arg) {
 	if (newsize > oldsize) {
 		sprintf(cmd, "lvm lvresize -fL %ld'M' store/%s", newsize, lv);
 		if (code = WEXITSTATUS(system(cmd))) {
-			steprintf("lvresize invocation failed with code %d", code); 
+			logprintf("2lvresize invocation failed with code %d", code); 
 			return;
                 }
 	}
 
 	umount_lv(lv);
 	if (!strcmp(type, "vfat") || !strcmp(type, "msdos")) {
-		status("resizing FAT filesystem");
+		logprintf("0%s","resizing FAT filesystem");
 		sprintf(cmd, "resizefat /dev/store/%s %ld'M'", lv, newsize);
 		if (code = WEXITSTATUS(system(cmd))) {
-        	        steprintf("resizefat invocation failed with code %d", code);
+        	        logprintf("2resizefat invocation failed with code %d", code);
 	                return;
         	}
 	} else if (!strncmp(type, "ext", 3)) {
-		stprintf("resizing %s filesystem", type);
+		logprintf("0resizing %s filesystem", type);
 		sprintf(cmd, "resize2fs /dev/store/%s %ld'M'", lv, newsize);
 		code = WEXITSTATUS(system(cmd));
 
 		// nobody seems to have documented 134 but the fs size changes and
 		// no errors are found by e2fsck so I assume it is benign.
 		if (code && (code != 134)) {
-			steprintf("resize2fs invocation failed with code %d", code);
+			logprintf("2resize2fs invocation failed with code %d", code);
 			return;
 		}
 	}
@@ -278,7 +279,7 @@ void resize_lv(const char *lv, enum resizemode mode, long arg) {
 	if (newsize < oldsize) {
 		sprintf(cmd, "lvm lvresize -fL %ld'M' store/%s", newsize, lv);
 		if (code = WEXITSTATUS(system(cmd))) {
-			steprintf("lvresize invocation failed with code %d", code); 
+			logprintf("2lvresize invocation failed with code %d", code); 
 			return;
                 }
 	}
@@ -297,11 +298,11 @@ long get_free_vg_space(void) {
 		"lvm vgs -o free --units m store | tail -n 1 | awk '{print $1}'"
 		, "r");
 	if (lvm_fp == NULL) {
-		stperror("error invoking lvm vgs pipeline");
+		logperror("error invoking lvm vgs pipeline");
 		return -1;
 	}
 	if (fgets(line, sizeof(line), lvm_fp) == NULL) {
-		stperror("error reading lvm vgs pipeline");
+		logperror("error reading lvm vgs pipeline");
 		pclose(lvm_fp);
 		return -1;
 	}
@@ -309,7 +310,7 @@ long get_free_vg_space(void) {
 	pclose(lvm_fp);
 	ret = atol(line);
 
-	stprintf("found %ld MiB of free LVM space", ret);
+	logprintf("0found %ld MiB of free LVM space", ret);
 	return ret;
 }
 
@@ -322,11 +323,11 @@ long get_lv_size(const char *lv) {
 		"awk -F: '{print $7}'", lv);
 	lvm_fp = popen(cmd, "r");
 	if (lvm_fp == NULL) {
-		stperror("error invoking lvdisplay pipeline");
+		logperror("error invoking lvdisplay pipeline");
 		return -1;
 	}
 	if (fgets(line, sizeof(line), lvm_fp) == NULL) {
-		stperror("error reading lvdisplay pipeline");
+		logperror("error reading lvdisplay pipeline");
 		pclose(lvm_fp);
 		return -1;
 	}
@@ -334,7 +335,7 @@ long get_lv_size(const char *lv) {
 	pclose(lvm_fp);
 	ret = atol(line) / 2048;
 
-	stprintf("current size of volume %s is %ld MiB", lv, ret);
+	logprintf("0current size of volume %s is %ld MiB", lv, ret);
 	return ret;
 }
 
@@ -342,7 +343,7 @@ void lv_to_tgz(const char *lv, const char *bname) {
 	int code;
 	char cmd[PATH_MAX];
 
-	stprintf("backing up volume %s to basename %s", lv, bname);
+	logprintf("0backing up volume %s to basename %s", lv, bname);
 
 	mount_lv("media");
 	mount_lv(lv);
@@ -351,7 +352,7 @@ void lv_to_tgz(const char *lv, const char *bname) {
 
 	sprintf(cmd, "/mnt/%s", lv);
 	if (chdir(cmd) == -1) {
-		stperror("can't chdir into source fs");
+		logperror("can't chdir into source fs");
 		return;
 	}
 
@@ -360,24 +361,24 @@ void lv_to_tgz(const char *lv, const char *bname) {
 		bname);
 
 	if (code = WEXITSTATUS(system(cmd)))
-		steprintf("tar creation failed with code %d", code);
+		logprintf("2tar creation failed with code %d", code);
 }
 
 char * get_lv_fstype(const char *lv) {
 	FILE *blkid_fp;
 	char cmd[PATH_MAX], *ret, *quote;
 
-	stprintf("determining fstype for lv %s", lv);
+	logprintf("0determining fstype for lv %s", lv);
 
 	snprintf(cmd, sizeof(cmd), "blkid /dev/store/%s", lv);
 	blkid_fp = popen(cmd, "r");
 	if (blkid_fp == NULL) {
-		stperror("error opening pipe to blkid");
+		logperror("error opening pipe to blkid");
 		return "?";
 	}
 
 	if (fgets(cmd, sizeof(cmd), blkid_fp) == NULL) {
-		stperror("error reading from blkid pipe");
+		logperror("error reading from blkid pipe");
 		pclose(blkid_fp);
 		return "?";
 	}
@@ -404,7 +405,7 @@ char * get_lv_fstype(const char *lv) {
 	for (int i = 0; i < strlen(ret); ++i)
 		ret[i] = tolower(ret[i]);
 
-	stprintf("blkid detected fstype of %s", ret);
+	logprintf("0blkid detected fstype of %s", ret);
 
 	return strdup(ret);
 }
@@ -413,7 +414,7 @@ void check_lv(const char *lv) {
 	int code;
 	char cmd[PATH_MAX], *type;
 
-	stprintf("checking filesystem on volume %s", lv);
+	logprintf("0checking filesystem on volume %s", lv);
 
 	umount_lv(lv);
 
@@ -424,19 +425,19 @@ void check_lv(const char *lv) {
 	else if (!strcmp(type, "vfat") || !strcmp(type, "msdos"))
 		snprintf(cmd, sizeof(cmd), "dosfsck -aw /dev/store/%s", lv);
 	else {
-		steprintf("error: unknown fstype %s", type);
+		logprintf("2error: unknown fstype %s", type);
 		return;
 	}
 
 	code = WEXITSTATUS(system(cmd));
 	if (code > 7) {
-		steprintf("error: fsck quit with abnormal code %d", code);
+		logprintf("2error: fsck quit with abnormal code %d", code);
 		return;
 	}
-	if (code & 1) status_error("warning: errors were fixed");
-	if (code & 4) status_error("warning: errors were left unfixed");
+	if (code & 1) logprintf("2%s", "warning: errors were fixed");
+	if (code & 4) logprintf("2%s", "warning: errors were left unfixed");
 	if (code & 2) {
-		status_error("system restart was requested, will reboot in 5s");
+		logprintf("2%s", "system restart was requested, will reboot in 5s");
 		sleep(3);
 		sync();
 		reboot(RB_AUTOBOOT);
@@ -454,26 +455,25 @@ long get_free_lv_space(const char *lv) {
 	df_fp = popen(cmd, "r");
 
 	if (df_fp == NULL) {
-		stperror("can't open pipe from df");
+		logperror("can't open pipe from df");
 		return -1;
 	}
 
 	if (fgets(cmd, sizeof(cmd), df_fp) == NULL) {
-		stperror("can't read from df pipe");
+		logperror("can't read from df pipe");
 		pclose(df_fp);
 		return -1;
 	}
 	pclose(df_fp);
 
 	if (cmd[0] == '\0') {
-		steprintf("df returned nothing");
+		logprintf("2df returned nothing");
 		return -1;
 	}
 
 	ret = atol(cmd);
-	if (!ret) status_error(cmd);
 
-	stprintf("found %ld MiB of free space on volume %s", ret, lv);
+	logprintf("0found %ld MiB of free space on volume %s", ret, lv);
 
 	return ret;
 }

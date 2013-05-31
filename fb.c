@@ -30,7 +30,7 @@
 
 #include "touch.h"
 #include "fb.h"
-
+#include "log.h"
 
 int fb_fd;
 struct fb_var_screeninfo vinfo;
@@ -163,76 +163,24 @@ void text_box(const char *s, int x, int y, int w, int h, int z, uint32_t tc, uin
 	text(s, x+8, y+8, z, z, tc, fc);
 }
 
-void status(char *str) {
-	++stat_page;
-	stat_page %= 16;
-
-	fill_rect(0,FBHEIGHT - 288 + stat_page*18, FBWIDTH,18, 0xFF4040C0);
-	text(str, 8,FBHEIGHT - 288 + stat_page*18, 1, 1, 0xFFC0C0C0,0xFF4040C0);
-}
-
-void status_error(char *str) {
-	++stat_page;
-	stat_page %= 16;
-
-	fill_rect(0,FBHEIGHT - 288 + stat_page*18, FBWIDTH,18, 0xFFFF0000);
-	text(str, 8,FBHEIGHT - 288 + stat_page*18, 1, 1, 0xFFFFFFFF,0xFFFF0000);
-
-	vibrate(160);
-	usleep(240000);
-	vibrate(80);
-	usleep(120000);
-	vibrate(80);
-	usleep(120000);
-	vibrate(80);
-	usleep(1520000);
-}
-
-void message(char *str) {
-	status(str);
-	wait_touch();
-}
-
-void stprintf(const char *fmt, ...) {
-	va_list args;
-	char buf[128];
-
-	va_start(args, fmt);
-	vsprintf(buf, fmt, args);
-	va_end(args);
-
-	status(buf);
-}
-
-void steprintf(const char *fmt, ...) {
-	va_list args;
-	char buf[128];
-
-	va_start(args, fmt);
-	vsprintf(buf, fmt, args);
-	va_end(args);
-
-	status_error(buf);
-}
-
 void set_brightness(int bright) {
 	int bright_fd, nchars;
 	char bright_str[4];
 
 	if (bright < 4) {
-		status_error("can't set brightness < 4");
+		logprintf("1can't set brightness < 4");
 		return;
 	}
 
 	bright_fd = open("/sys/class/leds/lcd-backlight/brightness", O_WRONLY);
 	if (bright_fd < 0) {
-		stperror("error opening brightness");
+		logperror("error opening brightness");
 		return;
 	}
 	nchars = snprintf(bright_str, sizeof(bright_str), "%d", bright);
 
 	if (write(bright_fd, bright_str, nchars) != nchars)
-		stperror("can't set brightness");
+		logperror("can't set brightness");
 
 	close(bright_fd);
 }

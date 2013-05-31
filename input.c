@@ -19,6 +19,7 @@
 
 #include "browse.h"
 #include "fb.h"
+#include "log.h"
 #include "install.h"
 #include "screens.h"
 #include "input.h"
@@ -347,8 +348,8 @@ long size_screen(const char *msg, long min, long max) {
 	long size;
 	do {
 		size = num_input(msg);
-		if (size < min) steprintf("size too small, lower limit is %ld", min);
-		if (size > max) steprintf("size too big, upper limit is %ld", max);
+		if (size < min) logprintf("1size too small, lower limit is %ld", min);
+		if (size > max) logprintf("1size too big, upper limit is %ld", max);
 	} while ((size < min) || (size > max));
 	return size;
 }
@@ -423,7 +424,7 @@ char * text_input(const char *prompt) {
 
 	output = malloc(128 * sizeof(char));;
 	if (output == NULL) {
-		stperror("can't allocate textbuf");
+		logperror("can't allocate textbuf");
 		return NULL;
 	}
 	memset(output, '\0', 128 * sizeof(char));

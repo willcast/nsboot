@@ -33,6 +33,7 @@
 #include "install.h"
 #include "browse.h"
 #include "lv.h"
+#include "log.h"
 
 const char *keepable_args[] = { "fbcon=", "klog=", "klog_len=", "nduid=",
 	"androidboot.serialno=", "boardtype=" };
@@ -88,7 +89,7 @@ void read_kb_file_from(char *lv) {
 
 	cfg_fp = fopen(path, "r");
 	if (cfg_fp == NULL) {
-		stperror("error opening kexecboot cfgfile");
+		logperror("error opening kexecboot cfgfile");
 		return;
 	}
 
@@ -156,7 +157,7 @@ struct boot_item * add_boot_item(char *item_label) {
 
 	new_menu = realloc(menu, menu_size * sizeof(struct boot_item));
 	if (new_menu == NULL) {
-		perror("can't allocate for new boot menu");
+		logperror("can't allocate for new boot menu");
 		return NULL;
 	}
 	menu = new_menu;
@@ -191,7 +192,7 @@ void boot_kexec(int entry_num) {
 	struct boot_item *entry = menu + entry_num;
 
 	if (entry->kernel == NULL) {
-		status("no kernel specified!");
+		logprintf("2no kernel specified!");
 		return;
 	}
 
@@ -211,15 +212,15 @@ void boot_kexec(int entry_num) {
 	strcat(cmd, entry->kernel);
 	strcat(cmd, "\"");
 
-	status("loading kexec kernel");
+	logprintf("0loading kexec kernel");
 	if (WEXITSTATUS(system(cmd)))
-		status_error("error loading");
+		logprintf("2error loading");
 
 	umount_lv(entry->cfgdev);
 
-	status("booting kernel");
+	logprintf("0booting kernel");
 	if (WEXITSTATUS(system("kexec --exec")))
-		status_error("error calling kexec");
+		logprintf("2error calling kexec");
 
-	status("kexec failed!");
+	logprintf("2kexec failed!");
 }

@@ -31,6 +31,7 @@
 #include "types.h"
 #include "boot.h"
 #include "fb.h"
+#include "log.h"
 
 struct dir_list *current = NULL;
 struct dir_list *lvs = NULL;
@@ -61,7 +62,7 @@ void update_dir_list(void) {
 	char pwd[PATH_MAX];
 
 	if (getcwd(pwd, PATH_MAX) == NULL) {
-		perror("getcwd");
+		logperror("getcwd");
 		return;
 	}
 
@@ -69,7 +70,7 @@ void update_dir_list(void) {
 
 	current = malloc(sizeof(struct dir_list));
 	if (current == NULL) {
-		perror("can't allocate mem for dir_list");
+		logperror("can't allocate mem for dir_list");
 		exit(1);
 	}
 
@@ -80,7 +81,7 @@ void update_dir_list(void) {
 		current->stats[i] = malloc(sizeof(struct stat));
 		if (stat(current->dents[i]->d_name, current->stats[i])) {
 			fprintf(stderr, "file %s: ", current->dents[i]->d_name);
-			perror("stat");
+			logperror("stat");
 		}
 	}
 }
@@ -188,12 +189,12 @@ void copy_file(const char *srcpath, const char *destpath) {
 
 	if (is_immutable(destpath)) return;
 
-	stprintf("from: %s", srcpath);
-	stprintf("to: %s", destpath);
+	logprintf("0 from: %s", srcpath);
+	logprintf("0 to: %s", destpath);
 
 	snprintf(cmd, sizeof(cmd), "cp -rf %s %s", srcpath, destpath);
 	if (code = WEXITSTATUS(system(cmd)))
-		steprintf("cp invocation failed with code %d", code);
+		logprintf("2cp invocation failed with code %d", code);
 }
 
 void move_file(const char *srcpath, const char *destpath) {
@@ -203,12 +204,12 @@ void move_file(const char *srcpath, const char *destpath) {
 	if (is_immutable(srcpath)) return;
 	if (is_immutable(destpath)) return;
 
-	stprintf("from: %s", srcpath);
-	stprintf("to: %s", destpath);
+	logprintf("0 from: %s", srcpath);
+	logprintf("0 to: %s", destpath);
 
 	snprintf(cmd, sizeof(cmd), "mv %s %s", srcpath, destpath);
 	if (code = WEXITSTATUS(system(cmd)))
-		steprintf("mv invocation failed with code %d", code);
+		logprintf("2mv invocation failed with code %d", code);
 }
 
 int file_mode(int num) {
@@ -219,7 +220,7 @@ int is_immutable(const char *name) {
 	for (int i = 0; i < ARRAY_SIZE(immutable_files); ++i)
 		if (!strncasecmp(name, immutable_files[i],
 		strlen(immutable_files[i]))) {
-			steprintf("%s is on the immutablity list", name);
+			logprintf("1%s is on the immutablity list", name);
 			return 1;
 		}
 

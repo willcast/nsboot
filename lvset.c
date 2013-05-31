@@ -34,11 +34,12 @@
 #include "lv.h"
 #include "lvset.h"
 #include "install.h"
+#include "log.h"
 
 void wipe_lv_set(const char *lv_set) {
 	char lv[PATH_MAX];
 
-	stprintf("wiping volumes starting with %s", lv_set);
+	logprintf("0%s", "wiping volumes starting with %s", lv_set);
 
 	sprintf(lv, "%s-system", lv_set);
 	wipe_lv(lv);
@@ -51,7 +52,7 @@ void wipe_lv_set(const char *lv_set) {
 void umount_lv_set(const char *lv_set) {
 	char lv[PATH_MAX];
 
-	stprintf("unmounting volumes starting with %s", lv_set);
+	logprintf("0%s", "unmounting volumes starting with %s", lv_set);
 
 	sprintf(lv, "%s-system", lv_set);
 	umount_lv(lv);
@@ -64,7 +65,7 @@ void umount_lv_set(const char *lv_set) {
 void mount_lv_set(const char *base) {
 	char src[PATH_MAX], targ[PATH_MAX];
 
-	stprintf("mounting volumes starting with %s", base);
+	logprintf("0%s", "mounting volumes starting with %s", base);
 
 	sprintf(targ, "/mnt/%s", base);
 	mkdir(targ, 0755);
@@ -73,19 +74,19 @@ void mount_lv_set(const char *base) {
 	mkdir(targ, 0755);
 	sprintf(src, "/dev/store/%s-system", base);
 	if (mount(src, targ, "ext4", MS_SILENT, NULL) == -1)
-		stperror("can't mount system volume");
+		logperror("can't mount system volume");
 
 	sprintf(targ, "/mnt/%s/data", base);
 	mkdir(targ, 0755);
 	sprintf(src, "/dev/store/%s-data", base);
 	if (mount(src, targ, "ext4", MS_SILENT, NULL) == -1)
-		stperror("can't mount data volume");
+		logperror("can't mount data volume");
 
 	sprintf(targ, "/mnt/%s/cache", base);
 	mkdir(targ, 0755);
 	sprintf(src, "/dev/store/%s-cache", base);
 	if (mount(src, targ, "ext4", MS_SILENT, NULL) == -1)
-		stperror("can't mount cache volume");
+		logperror("can't mount cache volume");
 }
 
 char * deduce_lv_set(const char *name) {
@@ -122,7 +123,7 @@ void new_lv_set(const char *name, int sys, int data, int cache) {
 	char lv[32];
 	long space;
 
-	stprintf("creating volume set with name %s", name);
+	logprintf("0%s", "creating volume set with name %s", name);
 
 	space = get_free_vg_space();
 	if (space == -1) return;

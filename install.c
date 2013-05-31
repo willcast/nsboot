@@ -31,6 +31,7 @@
 #include <linux/limits.h>
 
 #include "fb.h"
+#include "log.h"
 #include "lv.h"
 #include "lvset.h"
 #include "install.h"
@@ -48,7 +49,7 @@ void install_native(const char *tarname, const char *lv, int size) {
 	char cmd[PATH_MAX];
 	int code;
 
-	stprintf("installing new native Linux distro to %s", lv);
+	logprintf("0installing new native Linux distro to %s", lv);
 
 	if (lv == NULL) lv = deduce_lv(tarname);
 
@@ -63,12 +64,12 @@ void install_native(const char *tarname, const char *lv, int size) {
 
 	sprintf(cmd, "/mnt/%s", lv);
 	if (chdir(cmd) == -1)
-		stperror("can't chdir into target root");
+		logperror("can't chdir into target root");
 
 	sprintf(cmd, "tar -xzpf %s", tarname, lv);
-	status("extracting .tar.gz file, this may take 10+ minutes");
+	logprintf("0extracting .tar.gz file, this may take 10+ minutes");
 	if (code = WEXITSTATUS(system(cmd)))
-		steprintf("extraction failed with exit code %d", code);
+		logprintf("2extraction failed with exit code %d", code);
 }
 
 void install_android(const char *zipname, const char *base, int flags) {
@@ -76,7 +77,7 @@ void install_android(const char *zipname, const char *base, int flags) {
 	int sys, dat, cac;			// volume sizes
 	int code;
 
-	stprintf("installing to %s from file %s", base, zipname);
+	logprintf("0installing to %s from file %s", base, zipname);
 
 	if (base == NULL) base = deduce_lv_set(zipname);
 
@@ -104,87 +105,87 @@ void install_android(const char *zipname, const char *base, int flags) {
 	mount_lv_set(base);
 
 	if (getcwd(pwd, PATH_MAX) == NULL)
-		stperror("getcwd");
+		logperror("getcwd");
 	sprintf(cmd, "/mnt/%s", base);
 	if (chdir(cmd) == -1)
-		stperror("chdir into root of new install");
+		logperror("chdir into root of new install");
 
 	sprintf(cmd, "unzip -qo %s", zipname);
-	status("extracting zip file");
+	logprintf("0extracting zip file");
 	if (code = WEXITSTATUS(system(cmd)))
-		steprintf("unzipping failed with exit code %d", code);;
+		logprintf("2unzipping failed with exit code %d", code);;
 
 	sprintf(cmd, "/mnt/%s/system/etc/firmware/q6.mdt", base);
 	if (!test_file(cmd)) {
 		mount_lv("firmware");
-		status("copying firmware");
+		logprintf("0copying firmware");
 		sprintf(cmd,
 			"cp /mnt/firmware/IMAGE/* /mnt/%s/system/etc/firmware",
 			base);
 		if (code = WEXITSTATUS(system(cmd)))
-			steprintf("firmware copy failed with code %d", code);
+			logprintf("2firmware copy failed with code %d", code);
 	}
 
 	// convert update script into shell script and run it
-	status("converting updater script");
+	logprintf("0converting updater script");
 	if (code = WEXITSTATUS(system(update_str)))
-		steprintf("conversion pipeline failed with code %d", code);
-	status("running updater script");
+		logprintf("2conversion pipeline failed with code %d", code);
+	logprintf("0running updater script");
 
 	if (!is_lv_mounted("root")) mount_lv("root");
 	chmod("updatescript", 0755);
 	if (code = WEXITSTATUS(system("bash updatescript")))
-		stprintf("updater script exited with code %d", code);
+		logprintf("0updater script exited with code %d", code);
 
 	sprintf(cmd, "/mnt/%s/boot.img", base);
 	if (test_file(cmd) && (flags & INST_MOBOOT)) {
 		sprintf(cmd, "/mnt/%s/moboot.splash.CyanogenMod.tga", base);
 		if (test_file(cmd)) {
-			status("installing moboot splash");
+			logprintf("0installing moboot splash");
 			sprintf(cmd,
 				"cp moboot.splash.CyanogenMod.tga /mnt/boot/moboot.splash.%s.tga",
 				base);
 			if (code = WEXITSTATUS(system(cmd)))
-				steprintf("splash copy failed with code %d", code);
+				logprintf("2splash copy failed with code %d", code);
 		}
 
-		status("patching uImage");
+		logprintf("0patching uImage");
 		if (code = WEXITSTATUS(system("uimage-extract boot.img")))
-			steprintf("uImage extraction failed with code %d", code);
+			logprintf("2uImage extraction failed with code %d", code);
 		if (code = WEXITSTATUS(system("mv ramdisk.img ramdisk.gz")))
-			steprintf("renaming of ramdisk failed with code %d", code);
+			logprintf("2renaming of ramdisk failed with code %d", code);
 		if (code = WEXITSTATUS(system("gunzip ramdisk.gz")))
-			steprintf("ramdisk gunzipping failed with code %d", code);
+			logprintf("2ramdisk gunzipping failed with code %d", code);
 
 		mkdir("extracted", 0755);
 		if (chdir("extracted") == -1)
-			stperror("error changing directory into extraction area");
+			logperror("error changing directory into extraction area");
 		if (code = WEXITSTATUS(system("cpio -i < ../ramdisk")))
-			steprintf("extraction of ramdisk failed with code %d", code);
+			logprintf("2extraction of ramdisk failed with code %d", code);
 
 		sprintf(cmd, "sed -i -e 's/cm-system/%s-system/' -e "
 	"'s/cm-data/%s-data/' -e 's/cm-cache/%s-cache/' init.tenderloin.rc",
 		base, base, base);
 		if (code = WEXITSTATUS(system(cmd)))
-			steprintf("init script patching failed with code %s", code);
+			logprintf("2init script patching failed with code %s", code);
 		if (code = WEXITSTATUS(system("find . | cpio -o --format=newc"
 			"| lzma > ../ramdisk")))
-			steprintf("repacking of ramdisk failed with code %d", code);
+			logprintf("2repacking of ramdisk failed with code %d", code);
 
-		if (chdir("..") == -1) stperror("changing into parent directory failed");
+		if (chdir("..") == -1) logperror("changing into parent directory failed");
 		if (code = WEXITSTATUS(system("mkimage -A arm -O linux -T kernel -C "
 	"none -a 0x40208000 -e 0x40208000 -n kernel -d kernel.img uKernel")))
-			steprintf("mkimage for kernel failed with code %d", code);
+			logprintf("2mkimage for kernel failed with code %d", code);
 		if (code = WEXITSTATUS(system("mkimage -A arm -O linux -T ramdisk -C"
 	" none -a 0x60000000 -e 0x60000000 -n ramdisk -d ramdisk uRamdisk")))
-			steprintf("mkimage for ramdisk failed with code %d", code);
+			logprintf("2mkimage for ramdisk failed with code %d", code);
 		if (code = WEXITSTATUS(system("mkimage -A arm -O linux -T multi -C "
 	"none -a 0x40208000 -e 0x6000000 -n multi -d uKernel:uRamdisk uImage")))
-			steprintf("mkimage for multi image failed with code %d", code);
+			logprintf("2mkimage for multi image failed with code %d", code);
 
 		sprintf(cmd, "mv uImage /mnt/boot/uImage.%s", base);
 		if (code = WEXITSTATUS(system(cmd)))
-			steprintf("installation of patched uImage failed with code %d", code);
+			logprintf("2installation of patched uImage failed with code %d", code);
 		unlink("kernel.img");
 		unlink("ramdisk");
 		unlink("uImage");
@@ -192,13 +193,13 @@ void install_android(const char *zipname, const char *base, int flags) {
 
 	unlink("boot.img");
 	unlink("updatescript");
-	if (chdir(pwd) == -1) stperror("restoration of working directory failed");
+	if (chdir(pwd) == -1) logperror("restoration of working directory failed");
 }
 
 void delete_lv_set(const char *set) {
 	char lv[32];
 
-	status("deleting volume set");
+	logprintf("0deleting volume set");
 
 	sprintf(lv, "%s-system", set);
 	delete_lv(lv);
@@ -213,21 +214,21 @@ void install_tar(const char *file, const char *instlv) {
 	int code;
 	FILE *cfg_fp;
 
-	stprintf("installing kexec .tar file %s", file);
+	logprintf("0installing kexec .tar file %s", file);
 	if (code = WEXITSTATUS(system("rm -rf /mnt/tar")))
-		steprintf("cleaning of work area failed with code %d", code);
+		logprintf("2cleaning of work area failed with code %d", code);
 	mkdir("/mnt/tar", 0755);
 
 	sprintf(cmd, "tar -xf %s -C /mnt/tar", file);
 	if (code = WEXITSTATUS(system(cmd)))
-		steprintf("untarring failed with code %d", code);
+		logprintf("2untarring failed with code %d", code);
 
 	if (instlv == NULL) {
-		cfg_fp = fopen("/mnt/tar/smackme.cfg", "r");
+		cfg_fp = fopen("2/mnt/tar/smackme.cfg", "r");
 		if (cfg_fp == NULL) return;
 
 		if (fgets(line, sizeof(line), cfg_fp) == NULL)
-			stperror("fgets on smackme.cfg failed");
+			logperror("fgets on smackme.cfg failed");
 		fclose(cfg_fp);
 
 		// chomp newline
@@ -249,10 +250,9 @@ void install_tar(const char *file, const char *instlv) {
 	mkdir(cmd, 0755);
 
 	sprintf(cmd, "cp -f /mnt/tar/* /mnt/%s/boot/", lv);
-	status(cmd);
 
 	if (code = WEXITSTATUS(system(cmd)))
-		steprintf("copy of archive contents failed with code %d", code);
+		logprintf("2copy of archive contents failed with code %d", code);
 }
 
 void install_uimage(char *file) {
@@ -261,7 +261,7 @@ void install_uimage(char *file) {
 	int verbose_fd;
 	char *dot;
 
-	stprintf("installing uImage file %s", file);
+	logprintf("0installing uImage file %s", file);
 
 	dot = strchr(file, '.');
 	// we do NOT want to let users install to /boot/uImage!
@@ -270,18 +270,18 @@ void install_uimage(char *file) {
 
 	sprintf(cmd, "cp %s /mnt/boot", file);
 	if (code = WEXITSTATUS(system(cmd))) {
-		steprintf("uImage copy failed with code %d", code);
+		logprintf("2uImage copy failed with code %d", code);
 		return;
 	}
 
 	sprintf(cmd, "/mnt/boot/moboot.verbose.%s", dot);
 	verbose_fd = open(cmd, O_WRONLY | O_TRUNC);
 	if (verbose_fd < 0) {
-		stperror("can't open moboot.verbose");
+		logperror("can't open moboot.verbose");
 		return;
 	}
 	if (write(verbose_fd, "yes", 4) != 4)
-		stperror("can't write to moboot.verbose");
+		logperror("can't write to moboot.verbose");
 
 	close(verbose_fd);
 	return;
@@ -290,26 +290,26 @@ void install_uimage(char *file) {
 void replace_moboot(void) {
 	int code;
 
-	status("replacing noboot with nsboot");
+	logprintf("0replacing noboot with nsboot");
 
 	if (!test_file("/mnt/boot/uImage.nsboot")) {
-		steprintf("nsboot is not installed in boot");
+		logprintf("2nsboot is not installed in boot");
 		return;
 	}
 
 	if (chdir("/mnt/boot") == -1) {
-		stperror("error changing directory to boot");
+		logperror("error changing directory to boot");
 		return;
 	}
 
 	if (code = WEXITSTATUS(system("mv uImage uImage.old"))) {
-		steprintf("relocation of old bootloader failed with code %d", code);
-		status_error("WARNING: YOU MAY NEED TO USE NOVACOM TO REINSTALL A BOOTLOADER");
+		logprintf("2relocation of old bootloader failed with code %d", code);
+		logprintf("2%s", "WARNING: YOU MAY NEED TO USE NOVACOM TO REINSTALL A BOOTLOADER");
 		return;
 	}
 
 	if (symlink("uImage.nsboot", "uImage") == -1) {
-		stperror("error symlinking nsboot as main bootloader");
-		status_error("WARNING: YOU MAY NEED TO USE NOVACOM TO REINSTALL A BOOTLOADER");
+		logperror("error symlinking nsboot as main bootloader");
+		logprintf("2%s", "WARNING: YOU MAY NEED TO USE NOVACOM TO REINSTALL A BOOTLOADER");
 	}
 }

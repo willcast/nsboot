@@ -33,6 +33,8 @@
 #include <stdlib.h>
 #include <sys/reboot.h>
 
+#include "log.h"
+
 extern int sel;
 
 void main_menu(void) {
@@ -56,14 +58,14 @@ void main_menu(void) {
 		ts_read(&ts_x, &ts_y);
 
 		if (in_box(16, 128, 160, 88)) {
-			status("have a nice day");
+			logprintf("0have a nice day");
 			quit = 1;
 		} else if (in_box(192, 128, 340, 88) && confirm("power off")) {
-			status("powering off...");
+			logprintf("1powering off...");
 			sync();
 			reboot(RB_POWER_OFF);
 		} else if (in_box(548, 128, 232, 88) && confirm("reboot")) {
-			status("rebooting...");
+			logprintf("1rebooting...");
 			sync();
 			reboot(RB_AUTOBOOT);
 		} else if (in_box(16, 224, 336, 88))
@@ -231,7 +233,11 @@ void util_menu(void) {
 		text_box("check volume", 620,486, 232,52, 2,
 			0xFFFFFFFF,0xFF00C000,0xFFFFFFFF);
 		text_box("resize volume", 16,558, 250,52, 2,
-			0xFFFFFFF,0xFF0000C0,0xFFFFFFFF);
+			0xFFFFFFFF,0xFF0000C0,0xFFFFFFFF);
+		text_box("display log", 282,558, 214,52, 2,
+			0xFFFFFFFF,0xFF000000,0xFFFFFFFF);
+		text_box("dump log to file", 512,558, 304,52, 2,
+			0xFFFFFFFF,0xFF000000,0xFFFFFFFF);
 
 		ts_read(&ts_x, &ts_y);
 		if (in_box(16, 128, 124, 70)) ret = 1;
@@ -272,18 +278,18 @@ void util_menu(void) {
 			lv = select_lv(0);
 			if (lv == NULL) continue;
 			bname = text_input("Enter the name for your backup:");
-			if (bname == NULL) continue;
+			if ((bname == NULL) || (bname[0] == '\0')) continue;
 			if (confirm("backing up takes > 5 min")) lv_to_tgz(lv, bname);
 			free(bname);
 		} else if (in_box(444, 418, 322, 52)) {
 			if (getcwd(pwd, PATH_MAX) == NULL) {
-				stperror("can't getcwd");
+				logperror("can't getcwd");
 				continue;
 			}
 			cmd = text_input(pwd);
 			if ((cmd == NULL) || (cmd[0] == '\0')) continue;
 			if (code = WEXITSTATUS(system(cmd)))
-				steprintf("your shell command exited with code %d", code);
+				logprintf("2%s", "your shell command exited with code %d", code);
 			free(cmd);
 		} else if (in_box(16, 486, 322, 52)) {
 			lv_set = text_input("enter volume set name - example: android42");
@@ -309,6 +315,13 @@ void util_menu(void) {
 			snprintf(pwd, sizeof(pwd), "volume %s current size %ld MiB", lv, get_lv_size(lv));
 			sys = size_screen(pwd, 8, 65536);
 			if (confirm("resize volume, preserving data")) resize_lv(lv, RS_SET, sys);
+		} else if (in_box(282, 558, 214, 52))
+			display_wholelog();
+		else if (in_box(512, 358, 304, 52)) {
+			bname = text_input("please enter log name:");
+			if ((bname == NULL) || (bname[0] == '\0')) continue;
+			snprintf(pwd, sizeof(pwd), "/mnt/media/nsboot/%s.log", bname);
+			dump_log_to_file(pwd);
 		}
 	}
 }
@@ -365,12 +378,12 @@ void info_screen(void) {
 
 		fp = popen("date", "r");
 		if (date_str == NULL) {
-			stperror("error invoking date cmd");
+			logperror("error invoking date cmd");
 			return;
 		}
 
 		if (fgets(date_str, sizeof(date_str), fp) == NULL) {
-			stperror("error piping from date cmd");
+			logperror("error piping from date cmd");
 			return;
 		}
 		pclose(fp);
@@ -493,7 +506,7 @@ void task_menu(const char *file1) {
 				file2 = text_input("enter new name:");
 				slash = strchr(file2, '/');
 				if (slash != NULL) {
-					status_error("new name can't contain a slash");
+					logprintf("2new name can't contain a slash");
 					free(file2);
 				}
 			} while (slash != NULL);
@@ -519,12 +532,12 @@ void task_menu(const char *file1) {
 				file2 = text_input("enter directory name:");
 				slash = strchr(file2, '/');
 				if (slash != NULL) {
-					status_error("name can't contain a slash");
+					logprintf("2name can't contain a slash");
 					free(file2);
 				}
 			} while (slash != NULL);
 			mkdir(file2, 0755);
-			stprintf("directory %s created with mode 0755", file2);
+			logprintf("0%s", "directory %s created with mode 0755", file2);
 			free(file2);
 		} else if (in_box(176, 500, 88, 52)) mode ^= 00400;
 		else if (in_box(276, 500, 106, 52))  mode ^= 00200;
