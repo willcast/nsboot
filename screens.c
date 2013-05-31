@@ -93,31 +93,45 @@ void installer_menu(void) {
 		text("installer menu", 8, 8, 6, 6, 0xFF0000FF, 0xFF000000);
 
 		text_box("back", 16,128, 124,70, 3, 0xFFFFFFFF,0xFF606060,0xFFFFFFFF);
-		text_box("install .zip to new volume set", 16,214, 556,52, 2,
+
+		text(".zip file to set:", 16,214, 2,2, 0xFF00FFFF, 0xFF000000);
+		text_box("default", 374,214, 142,52, 2,
 			0xFFFFFFFF,0xFF00FFFF,0xFFFFFFFF);
-		text_box("install .zip to existing volume set", 16,282, 644,52, 2,
+		text_box("existing", 534,214, 160,52, 2,
 			0xFFFFFFFF,0xFF00FFFF,0xFFFFFFFF);
-		text_box("install .tar.gz to new volume", 16,350, 537,52, 2,
+		text_box("custom", 710,214, 124,52, 2,
+			0xFFFFFFFF,0xFF00FFFF,0xFFFFFFFF);
+
+		text(".tar.gz file to LV:", 16,282, 2,2, 0xFFFFFF00, 0xFF000000);
+		text_box("default", 374,282, 142,52, 2,
 			0xFFFFFFFF,0xFFFFFF00,0xFFFFFFFF);
-		text_box("install .tar.gz to existing volume", 16,418, 628,52, 2,
+		text_box("existing", 534,282, 160,52, 2,
 			0xFFFFFFFF,0xFFFFFF00,0xFFFFFFFF);
-		text_box("install uImage kernel to boot partition", 16,486, 718,52, 2,
+		text_box("custom", 710,282, 124,52, 2,
+			0xFFFFFFFF,0xFFFFFF00,0xFFFFFFFF);
+
+		text("kexec .tar to LV:", 16,360, 2,2, 0xFFFF00FF, 0xFF000000);
+		text_box("default", 374,360, 142,52, 2,
 			0xFFFFFFFF,0xFFFF00FF,0xFFFFFFFF);
-		text_box("install kexec .tar to existing volume", 16,554, 682,52, 2,
+		text_box("existing", 534,360, 160,52, 2,
 			0xFFFFFFFF,0xFFFF00FF,0xFFFFFFFF);
-		text_box("replace moboot with nsboot", 16,622, 502,52, 2,
+
+		text_box("uImage kernel to boot partition", 16,428, 718,52, 2,
+			0xFFFFFFFF,0xFF0000FF,0xFFFFFFFF);
+
+		text_box("replace moboot with nsboot", 16,486, 502,52, 2,
 			0xFFFFFFFF,0xFFFF0000,0xFFFFFFFF);
 
 		ts_read(&ts_x, &ts_y);
 
 		if (in_box(16, 128, 124, 70)) ret = 1;
-		else if (in_box(16, 214, 556, 52)) {
+		else if (in_box(374, 214, 142, 52)) {
 			filename = select_file(EXT, ".zip");
 			if (filename == NULL) continue;
 			flags = android_options();
 			if (confirm("install Android"))
                                 install_android(filename, NULL, flags);
-		} else if (in_box(16, 282, 644, 52)) {
+		} else if (in_box(534, 214, 160, 52)) {
 			filename = select_file(EXT, ".zip");
 			if (filename == NULL) continue;
 			lv_set = select_lv_set();
@@ -125,31 +139,53 @@ void installer_menu(void) {
 			flags = android_options();
 			if (confirm("install Android"))
                                 install_android(filename, lv_set, flags);
-		} else if (in_box(16, 350, 537, 52)) {
+		} else if (in_box(714, 214, 124, 52)) {
+			filename = select_file(EXT, ".zip");
+			if (filename == NULL) continue;
+			lv_set = text_input("enter custom LV set name:");
+			if ((lv_set == NULL) || (lv_set[0] == '\0')) continue;
+			flags = android_options();
+			if (confirm("install Android"))
+				install_android(filename, lv_set, flags);
+		} else if (in_box(374, 282, 142, 52)) {
 			filename = select_file(EXT, ".gz");
 			if (filename == NULL) continue;
                         size = size_screen("for new volume", 1728, 8192);
 			if (confirm("install .tar.gz file"))
                                 install_native(filename, NULL, size);
-		} else if (in_box(16, 418, 628, 52)) {
+		} else if (in_box(534, 282, 160, 52)) {
 			filename = select_file(EXT, ".gz");
 			if (filename == NULL) continue;
 			lv = select_lv(0);
 			if (lv == NULL) continue;
 			if (confirm("install .tar.gz file"))
-	                                install_native(filename, lv, 0);
-		} else if (in_box(16, 486, 718, 52)) {
+	                         install_native(filename, lv, 0);
+		} else if (in_box(714, 282, 124, 52)) {
+			filename = select_file(EXT, ".gz");
+			if (filename == NULL) continue;
+			lv = text_input("enter custom LV name:");
+			if ((lv == NULL) || (lv[0] == '\0')) continue;
+			if (confirm("install .tar.gz file"))
+				install_native(filename, lv, 0);
+		} else if (in_box(374, 360, 142, 52)) {
+			filename = select_file(EXT, ".tar");
+			if (filename == NULL) continue;
+			if (confirm("install kexec .tar"))
+                                install_tar(filename, NULL);
+		} else if (in_box(534, 360, 142, 52)) {
+			filename = select_file(EXT, ".tar");
+			if (filename == NULL) continue;
+			lv = select_lv(0);
+			if (lv == NULL) continue;
+			if (confirm("install kexec .tar"))
+                                install_tar(filename, lv);
+		} else if (in_box(16, 428, 718, 52)) {
 			filename = select_file(BASE, "uImage.");
 			if (filename == NULL) continue;
 			if (confirm("install uImage"))
                                 install_uimage(filename);
-		} else if (in_box(16, 554, 682, 52)) {
-			filename = select_file(EXT, ".tar");
-			if (filename == NULL) continue;
-			if (confirm("install kexec .tar"))
-                                install_tar(filename);
-		} else if (in_box(16, 622, 502, 52)) {
-			if  (confirm("replace moboot")) replace_moboot();
+		} else if (in_box(16, 486, 502, 52)) {
+			if (confirm("replace moboot")) replace_moboot();
 		}
 	}
 }

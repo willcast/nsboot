@@ -31,7 +31,7 @@ int test_file(const char *);
 void install_native(const char *, const char *, int);
 void install_android(const char *, const char *, int);
 void install_uimage(char *);
-void install_tar(char *);
+void install_tar(const char *, const char *);
 
 char * deduce_lv(const char *);
 char * deduce_lv_set(const char *);

@@ -31,15 +31,11 @@
 #include "boot.h"
 #include "types.h"
 #include "install.h"
+#include "browse.h"
 #include "lv.h"
 
 const char *keepable_args[] = { "fbcon=", "klog=", "klog_len=", "nduid=",
 	"androidboot.serialno=", "boardtype=" };
-
-char *boot_lvs[] = { "root", "ubuntu-root", "arch-root", "bodhi-root",
-	"slackware-root", "fedora-root", "cm-system", "android22-system",
-	"android23-system", "android40-system", "android41-system",
-	"android42-system", "media" };
 
 char *kept_cmdline;
 
@@ -180,12 +176,13 @@ struct boot_item * add_boot_item(char *item_label) {
 void scan_boot_lvs(void) {
 	char filename[64];
 
-	for (int i = 0; i < ARRAY_SIZE(boot_lvs); ++i) {
-		if (!lv_exists(boot_lvs[i])) continue;
-		mount_lv(boot_lvs[i]);
-		sprintf(filename, "/mnt/%s/boot/boot.cfg", boot_lvs[i]);
-		if (test_file(filename)) read_kb_file_from(boot_lvs[i]);
-		umount_lv(boot_lvs[i]);
+	update_lv_lists();
+
+	for (int i = 0; i < lv_count(); ++i) {
+		mount_lv(lv_name(i));
+		sprintf(filename, "/mnt/%s/boot/boot.cfg", lv_name(i));
+		if (test_file(filename)) read_kb_file_from(lv_name(i));
+		umount_lv(lv_name(i));
 	}
 }
 

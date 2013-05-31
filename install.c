@@ -208,7 +208,7 @@ void delete_lv_set(const char *set) {
 	delete_lv(lv);
 }
 
-void install_tar(char *file) {
+void install_tar(const char *file, const char *instlv) {
 	char cmd[PATH_MAX], line[PATH_MAX], *lv;
 	int code;
 	FILE *cfg_fp;
@@ -222,23 +222,26 @@ void install_tar(char *file) {
 	if (code = WEXITSTATUS(system(cmd)))
 		steprintf("untarring failed with code %d", code);
 
-	cfg_fp = fopen("/mnt/tar/smackme.cfg", "r");
-	if (cfg_fp == NULL) return;
+	if (instlv == NULL) {
+		cfg_fp = fopen("/mnt/tar/smackme.cfg", "r");
+		if (cfg_fp == NULL) return;
 
-	if (fgets(line, sizeof(line), cfg_fp) == NULL)
-		stperror("fgets on smackme.cfg failed");
-	fclose(cfg_fp);
+		if (fgets(line, sizeof(line), cfg_fp) == NULL)
+			stperror("fgets on smackme.cfg failed");
+		fclose(cfg_fp);
 
-	// chomp newline
-	// otherwise cp messes up in truly bizarre ways
-	lv = strchr(line, '\n');
-	*lv = '\0';
+		// chomp newline
+		// otherwise cp messes up in truly bizarre ways
+		lv = strchr(line, '\n');
+		*lv = '\0';
 
-	// the install device in the cfg file is the whole path
-	lv = strrchr(line, '/');
-	if (lv == NULL) return;
-	++lv;
-	if (lv[0] == '\0') return;
+		// the install device in the cfg file is the whole path
+		lv = strrchr(line, '/');
+		if (lv == NULL) return;
+		++lv;
+		if (lv[0] == '\0') return;
+	} else
+		lv = strdup(instlv);
 
 	mount_lv(lv);
 
