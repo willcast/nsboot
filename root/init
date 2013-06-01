@@ -17,6 +17,7 @@ mount -t proc proc /proc
 echo 2 > /proc/sys/kernel/printk
 mount -t sysfs sysfs /sys
 mount -t tmpfs -o nosuid,relatime,size=10240k,mode=755 dev /dev
+mount -t devpts none /dev/pts
 
 echo '[init] Starting hotplug'
 touch /etc/mdev.conf
@@ -29,6 +30,14 @@ rm -rf /etc/lvm/cache
 lvm vgchange -a y
 lvm vgmknodes
 
+echo '[init] Launching adbd'
+echo 1 > /sys/class/usb_composite/adb/enable
+echo 1 > /sys/class/usb_composite/rndis/enable
+chmod 777 /dev/android_adb
+mknod /dev/ptmx c 5 2
+chmod 777 /dev/ptmx
+adbd &
+
 echo '[init] Launching ts_srv'
 tssrv&
 
@@ -37,4 +46,5 @@ echo '[init] Launching nsboot'
 nsboot "$EVENT" >/dev/null 2>&1
 
 echo '[init] Error encountered, rebooting'
+sleep 5
 reboot
