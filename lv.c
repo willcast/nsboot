@@ -120,8 +120,6 @@ void wipe_lv(const char *lv) {
 		snprintf(cmd, sizeof(cmd), "mkswap /dev/store/%s", lv);
 	else if (!strcmp(type, "msdos") || !strcmp(type, "vfat"))
 		snprintf(cmd, sizeof(cmd), "mkdosfs /dev/store/%s", lv);
-	else if (!strncmp(type, "ext", 3))
-		snprintf(cmd, sizeof(cmd), "mke2fs -t %s /dev/store/%s", type, lv);
 	else
 		snprintf(cmd, sizeof(cmd), "mke2fs -t ext4 /dev/store/%s", lv);
 

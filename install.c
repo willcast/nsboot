@@ -56,8 +56,7 @@ void install_native(const char *tarname, const char *lv, int size) {
 	if (!lv_exists(lv))
 		new_lv(lv, size);
 
-	if (is_lv_mounted(lv))
-		umount_lv(lv);
+	umount_lv(lv);
 
 	wipe_lv(lv);
 	mount_lv(lv);

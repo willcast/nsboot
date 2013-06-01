@@ -160,15 +160,17 @@ void installer_menu(void) {
 			if (filename == NULL) continue;
 			lv = select_lv(0);
 			if (lv == NULL) continue;
+                        size = size_screen("for new volume", 1728, 8192);
 			if (confirm("install .tar.gz file"))
-	                         install_native(filename, lv, 0);
+	                         install_native(filename, lv, size);
 		} else if (in_box(714, 282, 124, 52)) {
 			filename = select_file(EXT, ".gz");
 			if (filename == NULL) continue;
 			lv = text_input("enter custom LV name:");
 			if ((lv == NULL) || (lv[0] == '\0')) continue;
+                        size = size_screen("for new volume", 1728, 8192);
 			if (confirm("install .tar.gz file"))
-				install_native(filename, lv, 0);
+				install_native(filename, lv, size);
 		} else if (in_box(374, 360, 142, 52)) {
 			filename = select_file(EXT, ".tar");
 			if (filename == NULL) continue;
