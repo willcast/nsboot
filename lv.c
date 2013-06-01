@@ -114,6 +114,8 @@ void wipe_lv(const char *lv) {
 	if (!is_lv_mounted("root")) mount_lv("root");
 	umount_lv(lv);
 
+	type = get_lv_fstype(lv);
+
 	if (!strcmp(type, "swap"))
 		snprintf(cmd, sizeof(cmd), "mkswap /dev/store/%s", lv);
 	else if (!strcmp(type, "msdos") || !strcmp(type, "vfat"))

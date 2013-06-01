@@ -28,6 +28,8 @@
 #include <sys/ioctl.h>
 #include <sys/file.h>
 #include <sys/mount.h>
+#include <sys/time.h>
+#include <sys/resource.h>
 #include <linux/limits.h>
 
 #include "browse.h"
@@ -39,10 +41,13 @@
 #include "log.h"
 
 void symlink_binaries(void);
+void enable_coredumps(void);
 
 int main(int argc, char **argv) {
 	int i;
 	char ts_name[PATH_MAX];
+
+	enable_coredumps();
 
 	if (load_font("t.fnt")) exit(1);
 
@@ -114,3 +119,10 @@ void symlink_binaries(void) {
 		logperror("symlink dosfsck failed");
 }
 
+void enable_coredumps(void) {
+	struct rlimit unlim;
+	unlim.rlim_cur = RLIM_INFINITY;
+	unlim.rlim_max = RLIM_INFINITY;
+
+	setrlimit(RLIMIT_CORE, &unlim);
+}

@@ -320,7 +320,9 @@ void util_menu(void) {
 		else if (in_box(512, 558, 304, 52)) {
 			bname = text_input("please enter log name:");
 			if ((bname == NULL) || (bname[0] == '\0')) continue;
-			snprintf(pwd, sizeof(pwd), "/mnt/media/nsboot/%s.log", bname);
+			mount_lv("media");
+			mkdir("/mnt/media/nsboot/logs/", 0755);
+			snprintf(pwd, sizeof(pwd), "/mnt/media/nsboot/logs/%s.log", bname);
 			dump_log_to_file(pwd);
 		}
 	}

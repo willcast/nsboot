@@ -1,0 +1,8 @@
+.rd
+.rd.lzma
+.urd
+nsboot
+nsboot-test
+uImage
+uImage-test
+logs/
