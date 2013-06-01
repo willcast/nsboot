@@ -118,10 +118,10 @@ void installer_menu(void) {
 		text_box("existing", 534,360, 160,52, 2,
 			0xFFFFFFFF,0xFFFF00FF,0xFFFFFFFF);
 
-		text_box("uImage kernel to boot partition", 16,428, 718,52, 2,
+		text_box("uImage kernel to boot partition", 16,428, 574,52, 2,
 			0xFFFFFFFF,0xFF0000FF,0xFFFFFFFF);
 
-		text_box("replace moboot with nsboot", 16,486, 502,52, 2,
+		text_box("replace moboot with nsboot", 16,486, 484,52, 2,
 			0xFFFFFFFF,0xFFFF0000,0xFFFFFFFF);
 
 		ts_read(&ts_x, &ts_y);
@@ -240,8 +240,11 @@ void util_menu(void) {
 			0xFFFFFFFF,0xFF000000,0xFFFFFFFF);
 		text_box("dump log to file", 512,558, 304,52, 2,
 			0xFFFFFFFF,0xFF000000,0xFFFFFFFF);
+		text_box("set brightness", 16,626, 268,52, 2,
+			0x00000000,0xFFFFFFFF,0x00000000);
 
 		ts_read(&ts_x, &ts_y);
+
 		if (in_box(16, 128, 124, 70)) ret = 1;
 		else if (in_box(16, 214, 250, 52)) {
 			lv = select_lv(1);
@@ -326,6 +329,9 @@ void util_menu(void) {
 			mkdir("/mnt/media/nsboot/logs/", 0755);
 			snprintf(pwd, sizeof(pwd), "/mnt/media/nsboot/logs/%s.log", bname);
 			dump_log_to_file(pwd);
+		} else if (in_box(16, 626, 268, 52)) {
+			sys = size_screen("set LCD brightness (4-255)", 4, 255);
+			set_brightness(sys);
 		}
 	}
 }
