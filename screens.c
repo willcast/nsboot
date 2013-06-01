@@ -1,4 +1,4 @@
-                 /*
+/*
     Copyright (C) 2013 Will Castro
 
     This file is part of nsboot.

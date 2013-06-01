@@ -306,28 +306,44 @@ int confirm(const char *label) {
 void boot_menu(void) {
 	int ts_x, ts_y;
 	int sel = -1;
-	int *by, *bw;
+	int *bx, *by, *bw;
+	int btn_x = 16, btn_y = 208;
+
+	char newlabel[128];
+
+	if (!menu_size) scan_boot_lvs();
 
 	clear_screen();
 
 	text("select a boot entry", 16, 16, 4, 4, 0xFFFFFFFF, 0xFF000000);
 	text_box("back", 16,104, 160,70, 3, 0xFFFFFFFF,0xFF808080,0xFFFFFFFF);
 
-	if (!menu_size) scan_boot_lvs();
-
+	bx = malloc(menu_size * sizeof(int));
 	by = malloc(menu_size * sizeof(int));
 	bw = malloc(menu_size * sizeof(int));
 
 	for (int i = 0; i < menu_size; ++i) {
-		int btn_y = 208 + i * 34;
 		struct boot_item *cur_item = menu + i; 
-		int btn_w = 16 + strlen(cur_item->label) * 9;
+		int btn_w = 32 + 9 *
+			(strlen(cur_item->label) +
+			strlen(cur_item->cfgdev));
 
-		text_box(cur_item->label, 16,btn_y, btn_w,26, 1,
-			0x00000000, 0xFFFFFFFF, 0xFFFFFFFF);
+		if (btn_x + btn_w > FBWIDTH) {
+			btn_y += 32;
+			btn_x = 16;
+		}
+		if (btn_y + 26 > FBHEIGHT) break;
 
+		text_box(cur_item->label, btn_x,btn_y, btn_w,24, 1,
+			0xFFFF0000, 0xFFFFFFFF, 0xFFFFFFFF);
+		text(cur_item->cfgdev, btn_x+24+strlen(cur_item->label)*9,
+			btn_y+8, 1,1, 0xFF0000FF, 0xFFFFFFFF);
+
+		bx[i] = btn_x;
 		by[i] = btn_y;
 		bw[i] = btn_w;
+
+		btn_x += btn_w + 16;
 	}
 
 	while (sel == -1) {
@@ -335,11 +351,12 @@ void boot_menu(void) {
 		if (in_box(16, 104, 160, 70)) break;
 
 		for (int i = 0; i < menu_size; ++i) {
-			if (in_box(16, by[i], bw[i], 26))
+			if (in_box(bx[i], by[i], bw[i], 26))
 				boot_kexec(i);
 		}
 	}
 
+	free(bx);
 	free(by);
 	free(bw);
 }

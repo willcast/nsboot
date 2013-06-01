@@ -222,26 +222,32 @@ void install_tar(const char *file, const char *instlv) {
 	if (code = WEXITSTATUS(system(cmd)))
 		logprintf("2untarring failed with code %d", code);
 
-	if (instlv == NULL) {
-		cfg_fp = fopen("2/mnt/tar/smackme.cfg", "r");
-		if (cfg_fp == NULL) return;
+	cfg_fp = fopen("/mnt/tar/smackme.cfg", "r");
+	if (cfg_fp == NULL) return;
 
-		if (fgets(line, sizeof(line), cfg_fp) == NULL)
-			logperror("fgets on smackme.cfg failed");
-		fclose(cfg_fp);
+	if (fgets(line, sizeof(line), cfg_fp) == NULL)
 
-		// chomp newline
-		// otherwise cp messes up in truly bizarre ways
-		lv = strchr(line, '\n');
-		*lv = '\0';
+	logperror("fgets on smackme.cfg failed");
+	fclose(cfg_fp);
+	// chomp newline
+	// otherwise cp messes up in truly bizarre ways
+	lv = strchr(line, '\n');
+	*lv = '\0';
 
-		// the install device in the cfg file is the whole path
-		lv = strrchr(line, '/');
-		if (lv == NULL) return;
-		++lv;
-		if (lv[0] == '\0') return;
-	} else
+	// the install device in the cfg file is the whole path
+	lv = strrchr(line, '/');
+
+	if (lv == NULL) return;
+	++lv;
+	if (lv[0] == '\0') return;
+
+	if (instlv != NULL) {
+		logprintf("1changing root LV from %s to %s", lv, instlv);
+		sprintf(cmd, "sed -ie 's/%s/%s/' /mnt/tar/boot.cfg", lv, instlv);
+		code = WEXITSTATUS(system(cmd));
+
 		lv = strdup(instlv);
+	}
 
 	mount_lv(lv);
 
@@ -303,12 +309,14 @@ void replace_moboot(void) {
 
 	if (code = WEXITSTATUS(system("mv uImage uImage.old"))) {
 		logprintf("2relocation of old bootloader failed with code %d", code);
-		logprintf("2%s", "WARNING: YOU MAY NEED TO USE NOVACOM TO REINSTALL A BOOTLOADER");
+		logprintf("3%s", "WARNING: YOU MAY NEED TO USE NOVACOM TO REINSTALL A BOOTLOADER");
+		sleep(1);
 		return;
 	}
 
 	if (symlink("uImage.nsboot", "uImage") == -1) {
 		logperror("error symlinking nsboot as main bootloader");
-		logprintf("2%s", "WARNING: YOU MAY NEED TO USE NOVACOM TO REINSTALL A BOOTLOADER");
+		logprintf("3%s", "WARNING: YOU MAY NEED TO USE NOVACOM TO REINSTALL A BOOTLOADER");
+		sleep(1);
 	}
 }
