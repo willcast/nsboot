@@ -289,7 +289,7 @@ void util_menu(void) {
 			cmd = text_input(pwd);
 			if ((cmd == NULL) || (cmd[0] == '\0')) continue;
 			if (code = WEXITSTATUS(system(cmd)))
-				logprintf("2%s", "your shell command exited with code %d", code);
+				logprintf("2your shell command exited with code %d", code);
 			free(cmd);
 		} else if (in_box(16, 486, 322, 52)) {
 			lv_set = text_input("enter volume set name - example: android42");
@@ -317,7 +317,7 @@ void util_menu(void) {
 			if (confirm("resize volume, preserving data")) resize_lv(lv, RS_SET, sys);
 		} else if (in_box(282, 558, 214, 52))
 			display_wholelog();
-		else if (in_box(512, 358, 304, 52)) {
+		else if (in_box(512, 558, 304, 52)) {
 			bname = text_input("please enter log name:");
 			if ((bname == NULL) || (bname[0] == '\0')) continue;
 			snprintf(pwd, sizeof(pwd), "/mnt/media/nsboot/%s.log", bname);

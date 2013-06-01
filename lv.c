@@ -107,7 +107,7 @@ void wipe_lv(const char *lv) {
 	int code;
 
 	if (!strcmp(lv, "root")) {
-		logprintf("2%s", "root volume may not be wiped");
+		logprintf("2root volume may not be wiped");
 		return;
 	}
 
@@ -119,9 +119,9 @@ void wipe_lv(const char *lv) {
 	else if (!strcmp(type, "msdos") || !strcmp(type, "vfat"))
 		snprintf(cmd, sizeof(cmd), "mkdosfs /dev/store/%s", lv);
 	else if (!strncmp(type, "ext", 3))
-		sprintf(cmd, "mke2fs -t %s /dev/store/%s", type, lv);
+		snprintf(cmd, sizeof(cmd), "mke2fs -t %s /dev/store/%s", type, lv);
 	else
-		sprintf(cmd, "mke2fs -t ext4 /dev/store/%s", lv);
+		snprintf(cmd, sizeof(cmd), "mke2fs -t ext4 /dev/store/%s", lv);
 
 	logprintf("0making %s filesystem on volume %s", type, lv);
 
@@ -245,6 +245,7 @@ void resize_lv(const char *lv, enum resizemode mode, long arg) {
 
 	if (newsize > oldsize + space) resize_lv("media", RS_FREE, newsize - oldsize);
 
+	umount_lv(lv);
 	check_lv(lv);
 
 	if (newsize > oldsize) {
@@ -255,7 +256,6 @@ void resize_lv(const char *lv, enum resizemode mode, long arg) {
                 }
 	}
 
-	umount_lv(lv);
 	if (!strcmp(type, "vfat") || !strcmp(type, "msdos")) {
 		logprintf("0%s","resizing FAT filesystem");
 		sprintf(cmd, "resizefat /dev/store/%s %ld'M'", lv, newsize);
