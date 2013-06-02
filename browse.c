@@ -41,7 +41,9 @@ struct str_list *lv_sets = NULL;
 // inadvertently kill bootie or webOS
 char *immutable_files[] = {
 	"/mnt/boot/boot.bin",
-	"/mnt/boot/uImage",
+	"/mnt/boot/uImage.moboot",
+	"/mnt/boot/uImage.nsboot",
+	"/mnt/boot/uImage-2.6.35-palm-tenderloin",
 	"/mnt/boot/bin",
 	"/mnt/boot/dev",
 	"/mnt/boot/etc",
