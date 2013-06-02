@@ -65,7 +65,7 @@ void install_native(const char *tarname, const char *lv, int size) {
 	if (chdir(cmd) == -1)
 		logperror("can't chdir into target root");
 
-	sprintf(cmd, "tar -xzpf %s", tarname, lv);
+	sprintf(cmd, "tar -xzpf %s", tarname);
 	logprintf("0extracting .tar.gz file, this may take 10+ minutes");
 	if (code = WEXITSTATUS(system(cmd)))
 		logprintf("2extraction failed with exit code %d", code);
