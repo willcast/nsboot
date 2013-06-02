@@ -116,13 +116,6 @@ void do_init(void) {
 	}
 	atexit(fb_close);
 
-	logprintf("0starting adbd");
-	code = system("echo 1 > /sys/class/usb_composite/adb/enable");
-	code = system("echo 1 > /sys/class/usb_composite/rndis/enable");
-	chmod("/dev/android_adb", 0777);
-	if (code = WEXITSTATUS(system("adbd >/var/adbd.log 2>/var/adbd.err &")))
-		logprintf("2adbd failed to start, code %d");
-
 	logprintf("0starting touchscreen service");
 	if (code = WEXITSTATUS(system("tssrv &"))) {
 		logprintf("3tssrv failed to start, code %d");
@@ -174,6 +167,8 @@ void do_shutdown(void) {
 
 	logprintf("0stopping adbd");
 	code = system("killall adbd");
+	code = system("echo 0 > /sys/class/usb_composite/adb/enable");
+	code = system("echo 0 > /sys/class/usb_composite/rndis/enable");
 
 	logprintf("0unmounting base volumes");
 	umount_lv("media");
@@ -186,6 +181,19 @@ void do_shutdown(void) {
 
 	logprintf("0 - /mnt/firmware");	
 	umount("/mnt/firmware");
+
+	logprintf("0disabling framebuffer");
+	if (is_fb_available()) fb_close();
+
+	logprintf("0disabling touch screen");
+	code = system("echo 0 > /sys/devices/platform/cy8ctma395/vdd");
+
+	logprintf("0unmounting all volumes");
+	code = chdir("/");
+	code = system("umount -a");
+
+	logprintf("0syncing");
+	sync();
 }
 
 void do_cleanup(void) {
@@ -230,3 +238,13 @@ void enable_coredumps(void) {
 	setrlimit(RLIMIT_CORE, &unlim);
 }
 
+void start_adbd(void) {
+	int code;
+
+	logprintf("0starting adbd");
+	code = system("echo 1 > /sys/class/usb_composite/adb/enable");
+	code = system("echo 1 > /sys/class/usb_composite/rndis/enable");
+	chmod("/dev/android_adb", 0777);
+	if (code = WEXITSTATUS(system("adbd >/var/adbd.log 2>/var/adbd.err &")))
+		logprintf("2adbd failed to start, code %d");
+}

@@ -39,7 +39,7 @@
 void wipe_lv_set(const char *lv_set) {
 	char lv[PATH_MAX];
 
-	logprintf("0%s", "wiping volumes starting with %s", lv_set);
+	logprintf("0wiping volumes starting with %s", lv_set);
 
 	sprintf(lv, "%s-system", lv_set);
 	wipe_lv(lv);
@@ -52,7 +52,7 @@ void wipe_lv_set(const char *lv_set) {
 void umount_lv_set(const char *lv_set) {
 	char lv[PATH_MAX];
 
-	logprintf("0%s", "unmounting volumes starting with %s", lv_set);
+	logprintf("0unmounting volumes starting with %s", lv_set);
 
 	sprintf(lv, "%s-system", lv_set);
 	umount_lv(lv);
@@ -65,7 +65,7 @@ void umount_lv_set(const char *lv_set) {
 void mount_lv_set(const char *base) {
 	char src[PATH_MAX], targ[PATH_MAX];
 
-	logprintf("0%s", "mounting volumes starting with %s", base);
+	logprintf("0mounting volumes starting with %s", base);
 
 	sprintf(targ, "/mnt/%s", base);
 	mkdir(targ, 0755);
@@ -108,7 +108,7 @@ char * deduce_lv_set(const char *name) {
 		result = strdup("android40");
 	else if ((!strncasecmp("update-cm10-", base, 10)) ||
 		(!strncasecmp("update-cm-10-", base, 11)) ||
-		(!strncasecmp("cm-10-", base, 5)) ||
+		(!strncasecmp("cm-10-", base, 6)) ||
 		(!strncasecmp("skz_tenderloin-1.20", base, 19)) ||
 		(!strncasecmp("gapps-jb-20120", base, 14)) ||
 		(!strncasecmp("gapps-jb-201210", base, 15)))

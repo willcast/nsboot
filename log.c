@@ -110,7 +110,8 @@ void dump_log_to_file(const char *path) {
 	}
 
 	for (int i = 0; i < loglist->used; ++i) {
-		if (loglist->data[i] != '\0') status = fputs(loglist->data[i], log_fp);
+		if (loglist->data[i] != '\0')
+			status = fprintf(log_fp, "%s", loglist->data[i]);
 		if (status == EOF) {
 			logperror("error writing to log file");
 			fclose(log_fp);

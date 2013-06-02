@@ -34,6 +34,7 @@
 #include <sys/reboot.h>
 
 #include "log.h"
+#include "init.h"
 
 extern int sel;
 
@@ -242,6 +243,8 @@ void util_menu(void) {
 			0xFFFFFFFF,0xFF000000,0xFFFFFFFF);
 		text_box("set brightness", 16,626, 268,52, 2,
 			0x00000000,0xFFFFFFFF,0x00000000);
+		text_box("start adbd", 300,626, 196,52, 2,
+			0x00000000,0xFFFFFFFF,0x00000000);
 
 		ts_read(&ts_x, &ts_y);
 
@@ -332,7 +335,8 @@ void util_menu(void) {
 		} else if (in_box(16, 626, 268, 52)) {
 			sys = size_screen("set LCD brightness (4-255)", 4, 255);
 			set_brightness(sys);
-		}
+		} else if (in_box(300, 626, 196, 52))
+			start_adbd();
 	}
 }
 

@@ -34,6 +34,7 @@
 #include "browse.h"
 #include "lv.h"
 #include "log.h"
+#include "init.h"
 
 const char *keepable_args[] = { "fbcon=", "klog=", "klog_len=", "nduid=",
 	"androidboot.serialno=", "boardtype=" };
@@ -188,6 +189,7 @@ void scan_boot_lvs(void) {
 
 void boot_kexec(int entry_num) {
 	char cmd[1024];
+	int code;
 	struct boot_item *entry = menu + entry_num;
 
 	if (entry->kernel == NULL) {
@@ -196,30 +198,40 @@ void boot_kexec(int entry_num) {
 	}
 
 	mount_lv(entry->cfgdev);
-	strcpy(cmd, "kexec --load ");
+	sprintf(cmd, "mount -o remount,ro %s", entry->cfgdev);
+	if (code = WEXITSTATUS(system(cmd)))
+		logprintf("1can't remount read only, code %d", code);
+
+	strcpy(cmd, "kexec --load-hardboot --mem-min=0x48000000 --mem-max=0x4FFFFFFF ");
 	if (entry->initrd != NULL) {
-		strcat(cmd, " \"--initrd=");
+		strcat(cmd, " --initrd='");
 		strcat(cmd, entry->initrd);
-		strcat(cmd, "\"");
+		strcat(cmd, "'");
 	}
 	if (entry->append != NULL) {
-		strcat(cmd, " \"--append=");
+		strcat(cmd, " --append='");
 		strcat(cmd, entry->append);
-		strcat(cmd, "\"");
+		strcat(cmd, "'");
 	}
-	strcat(cmd, " \"");
+	strcat(cmd, " '");
 	strcat(cmd, entry->kernel);
-	strcat(cmd, "\"");
+	strcat(cmd, "'");
 
 	logprintf("0loading kexec kernel");
-	if (WEXITSTATUS(system(cmd)))
-		logprintf("2error loading");
+	if (code = WEXITSTATUS(system(cmd))) {
+		logprintf("2error loading kernel, code %d", code);
+		return;
+	}
 
 	umount_lv(entry->cfgdev);
+
+	logprintf("0shutting down services");
+	do_shutdown();
 
 	logprintf("0booting kernel");
 	if (WEXITSTATUS(system("kexec --exec")))
 		logprintf("2error calling kexec");
 
-	logprintf("2kexec failed!");
+	logprintf("3kexec failed!");
+	exit(1);
 }

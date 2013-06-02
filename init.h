@@ -27,4 +27,6 @@ void do_shutdown(void);
 void symlink_binaries(void);
 void enable_coredumps(void);
 
+void start_adbd(void);
+
 #endif
