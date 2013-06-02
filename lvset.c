@@ -93,8 +93,8 @@ char * deduce_lv_set(const char *name) {
 	char *base = basename(name);
 	char *result = NULL;
 
-	if ((!strncasecmp("Froyo-", base, 6)) ||
-	   (!strncasecmp("gapps-mdpi", base, 9)))
+	if ((!strncasecmp("froyo-", base, 6)) ||
+	   (!strncasecmp("gapps-mdpi", base, 10)))
 		result = strdup("android22");
 	else if ((!strncasecmp("update-cm7", base, 10)) ||
 		(!strncasecmp("update-cm-7", base, 11)) ||
@@ -106,14 +106,17 @@ char * deduce_lv_set(const char *name) {
 		(!strncasecmp("cm-9", base, 4)) ||
 		(!strncasecmp("gapps-ics", base, 9)))
 		result = strdup("android40");
-	else if ((!strncasecmp("update-cm10", base, 10)) ||
-		(!strncasecmp("update-cm-10", base, 11)) ||
-		(!strncasecmp("cm-10", base, 4)) ||
+	else if ((!strncasecmp("update-cm10-", base, 10)) ||
+		(!strncasecmp("update-cm-10-", base, 11)) ||
+		(!strncasecmp("cm-10-", base, 5)) ||
+		(!strncasecmp("skz_tenderloin-1.20", base, 19)) ||
 		(!strncasecmp("gapps-jb-20120", base, 14)) ||
-		(!strncasecmp("gapps-jb-201210", base, 14)))
+		(!strncasecmp("gapps-jb-201210", base, 15)))
 		result = strdup("android41");
 	else if ((!strncasecmp("ev", base, 2)) ||
-		(!strncasecmp("gapps-jb", base, 9)))
+		(!strncasecmp("cm-10.1", base, 7)) ||
+		(!strncasecmp("skz_tenderloin-2.00", base, 19)) ||
+		(!strncasecmp("gapps-jb", base, 8)))
 		result = strdup("android42");
 
 	return result;

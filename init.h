@@ -16,9 +16,15 @@
     You should have received a copy of the GNU General Public License
     along with nsboot.  If not, see <http://www.gnu.org/licenses/>
 */
+
+#ifndef NSBOOT_INIT_H
+#define NSBOOT_INIT_H
+
 void do_init(void);
 void do_cleanup(void);
 void do_shutdown(void);
 
 void symlink_binaries(void);
 void enable_coredumps(void);
+
+#endif
