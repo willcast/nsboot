@@ -183,7 +183,6 @@ void scan_boot_lvs(void) {
 		mount_lv(lv_name(i));
 		sprintf(filename, "/mnt/%s/boot/boot.cfg", lv_name(i));
 		if (test_file(filename)) read_kb_file_from(lv_name(i));
-		umount_lv(lv_name(i));
 	}
 }
 

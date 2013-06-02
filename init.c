@@ -160,6 +160,8 @@ void do_init(void) {
 	logprintf("0mounting base volumes");
 	mount_lv("media");
 	mkdir("/mnt/media/nsboot", 0755);
+	if (chdir("/mnt/media") == -1)
+		logperror("can't chdir into /mnt/media");
 
 	mount_lv("root");
 }
