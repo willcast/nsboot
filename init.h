@@ -16,32 +16,9 @@
     You should have received a copy of the GNU General Public License
     along with nsboot.  If not, see <http://www.gnu.org/licenses/>
 */
+void do_init(void);
+void do_cleanup(void);
+void do_shutdown(void);
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <stdint.h>
-#include <fcntl.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/ioctl.h>
-#include <sys/file.h>
-#include <sys/mount.h>
-#include <sys/time.h>
-
-#include "browse.h"
-#include "fb.h"
-#include "touch.h"
-#include "screens.h"
-#include "boot.h"
-#include "lv.h"
-#include "log.h"
-#include "init.h"
-
-int main(int argc, char **argv) {
-	do_init();
-	main_menu();
-
-	exit(0);
-}
+void symlink_binaries(void);
+void enable_coredumps(void);

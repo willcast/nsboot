@@ -27,9 +27,12 @@
 #include <errno.h>
 
 // management functions
+int is_fb_available(void);
 int fb_init(void);
 void fb_close(void);
 int load_font(char *);
+void ditch_stdouterr();
+void reclaim_stdouterr();
 
 // drawing functions
 void clear_screen(void);

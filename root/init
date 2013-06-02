@@ -7,50 +7,16 @@
 # This code is taken from https://github.com/slashbeast/better-initramfs
 # and stripped down (by Arch Linux ARM) to the be tiny and easy to read.
 
-EVENT=/dev/event2
-PATH=/bin
+export PATH=/bin
 
-/bin/busybox --install -s
+echo '[init] booting'
+nsboot
 
-echo '[init] Mounting virtual filesystems'
-mount -t proc proc /proc
-echo 2 > /proc/sys/kernel/printk
-mount -t sysfs sysfs /sys
-mount -t tmpfs -o nosuid,relatime,size=10240k,mode=755 dev /dev
-mkdir /dev/pts
-mount -t devpts none /dev/pts
-
-echo '[init] Starting hotplug'
-touch /etc/mdev.conf
-echo /sbin/mdev > /proc/sys/kernel/hotplug
-mdev -s
-
-echo '[init] Enabling core dumps'
-echo '/var/core-%e' > /proc/sys/kernel/core_pattern
-
-echo '[init] Starting LVM'
-rm -rf /etc/lvm/cache
-lvm vgchange -a y
-lvm vgmknodes
-
-echo '[init] Launching adbd'
-echo 1 > /sys/class/usb_composite/adb/enable
-echo 1 > /sys/class/usb_composite/rndis/enable
-chmod 777 /dev/android_adb
-( while true; do adbd >>/var/adbd.log 2>>/var/adbd.err; sleep 1; done) &
-
-echo '[init] Launching ts_srv'
-tssrv&
-
-cd /
-echo '[init] Launching nsboot'
-nsboot "$EVENT" >/var/nsboot.out 2>/var/nsboot.err
-
-echo '[init] Error encountered, copying core file(s) to SD card and rebooting'
+echo '[init] error encountered, copying core file(s) to SD card and rebooting'
 mkdir -p /mnt/media
 mount /dev/store/media /mnt/media
 mkdir -p /mnt/media/nsboot/logs
 cp /var/* /mnt/media/nsboot/logs/
-sleep 5
+sleep 10
 sync
 reboot

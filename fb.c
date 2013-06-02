@@ -35,10 +35,16 @@
 int fb_fd;
 struct fb_var_screeninfo vinfo;
 struct fb_fix_screeninfo finfo;
-char *fbp;
+char *fbp = NULL;
 int stat_page = 0;
 long screen_size = 0;
 uint8_t font[8][16][256];
+
+int is_fb_available(void) {
+	return !(fbp == NULL);
+}
+
+int out_fd, err_fd, save_out, save_err;
 
 int fb_init(void) {
 	fb_fd = open("/dev/fb0", O_RDWR);
@@ -65,6 +71,8 @@ int fb_init(void) {
 		close(fb_fd);
 		return 1;
 	}
+	ditch_stdouterr();
+
 	return 0;
 }
 
@@ -72,6 +80,8 @@ void fb_close(void) {
 	clear_screen();
 	munmap(fbp, screen_size);
 	close(fb_fd);
+	fbp = NULL;
+	reclaim_stdouterr();
 }
 
 void put_pixel(int x, int y, uint32_t color) {
@@ -185,3 +195,27 @@ void set_brightness(int bright) {
 	close(bright_fd);
 }
 
+void ditch_stdouterr(void) {
+    out_fd = open("/var/nsboot.out", O_RDWR|O_CREAT|O_APPEND, 0644);
+    if (-1 == out_fd) { logperror("opening nsboot.err"); return; }
+
+    err_fd = open("/var/nsboot.err", O_RDWR|O_CREAT|O_APPEND, 0644);
+    if (-1 == err_fd) { logperror("opening nsboot.err"); return; }
+
+    save_out = dup(fileno(stdout));
+    save_err = dup(fileno(stderr));
+
+    if (-1 == dup2(out_fd, fileno(stdout))) { logperror("cannot redirect stdout"); return; }
+    if (-1 == dup2(err_fd, fileno(stderr))) { logperror("cannot redirect stderr"); return; }
+}
+
+void reclaim_stdouterr(void) {
+    fflush(stdout); close(out_fd);
+    fflush(stderr); close(err_fd);
+
+    dup2(save_out, fileno(stdout));
+    dup2(save_err, fileno(stderr));
+
+    close(save_out);
+    close(save_err);
+}

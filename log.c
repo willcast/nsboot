@@ -61,7 +61,8 @@ void logprintf(const char *fmt, ...) {
 void display_logbar(void) {
 	char *str;
 	int loglevel = 0, logindex = 0;
-	for (int i = 0; i < 16; ++i) {
+
+	if (is_fb_available()) for (int i = 0; i < 16; ++i) {
 		logindex = loglist->used - 16 + i;
 		if (logindex < 0) continue;
 		loglevel = (int)strtol(loglist->data[logindex], &str, 10);
@@ -70,14 +71,15 @@ void display_logbar(void) {
 		else if (loglevel > 3) loglevel = 3;
 		fill_rect(0, FBHEIGHT - 256 + i*16, FBWIDTH, 16, logpalette[loglevel]);
 		text(str, 0, FBHEIGHT - 256 + i*16, 1, 1, 0xFFFFFFFF, logpalette[loglevel]);
-	}
+	} else
+		fprintf(stderr, "%s\n", loglist->data[loglist->used-1]+1);
 }
 
 void display_wholelog(void) {
 	char *str;
 	int loglevel = 0, logindex = 0;
 	int start = 0;
-	while (start < loglist->used) {
+	if (is_fb_available()) while (start < loglist->used) {
 		clear_screen();
 
 		for (int i = 0; i < FBHEIGHT / 16; ++i) {
@@ -91,13 +93,12 @@ void display_wholelog(void) {
 			else if (loglevel > 3) loglevel = 3;
 			fill_rect(0, i*16, FBWIDTH, 16, logpalette[loglevel]);
 			text(str, 0, i*16, 1, 1, 0xFFFFFFFF, logpalette[loglevel]);
-
 		}
 		start += FBHEIGHT / 16;
 		wait_touch();
-	}
+	} else for (int i = 0; i < loglist->used; ++i)
+		fprintf(stderr, "%s\n", loglist->data[i]+1);
 }
-
 void dump_log_to_file(const char *path) {
 	FILE *log_fp;
 	int status = 0;
@@ -116,6 +117,5 @@ void dump_log_to_file(const char *path) {
 			return;
 		}
 	}
-
 	fclose(log_fp);
 }
