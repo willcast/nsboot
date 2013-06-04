@@ -35,6 +35,7 @@
 #include "lv.h"
 #include "lvset.h"
 #include "install.h"
+#include "lib.h"
 
 const char *update_str = "cat META-INF/com/google/android/updater-script"
 "| grep -v '^\\(assert\\)\\|\\(package_extract_.*\\)\\|\\(^mount\\)\\|\\(format\\)\\|\\(run_program\\)\\|\\(^umount\\)\\|\\(^unmount\\)\\|\\(show_progress\\)\\|\\(ui_print\\)\\|\\(^delete\\)' "
@@ -298,15 +299,8 @@ void install_uimage(char *file) {
 	}
 
 	sprintf(cmd, "/mnt/boot/moboot.verbose.%s", dot);
-	verbose_fd = open(cmd, O_WRONLY | O_TRUNC);
-	if (verbose_fd < 0) {
-		logperror("can't open moboot.verbose");
-		return;
-	}
-	if (write(verbose_fd, "yes", 4) != 4)
-		logperror("can't write to moboot.verbose");
+	qfprintf(cmd, "yes");
 
-	close(verbose_fd);
 	return;
 }
 

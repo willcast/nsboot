@@ -35,8 +35,10 @@
 #include "lv.h"
 #include "log.h"
 #include "init.h"
+#include "lib.h"
 
-const char *keepable_args[] = { "fbcon=", "klog=", "klog_len=",
+
+const char *keepable_args[] = { "fbcon=e", "klog=", "klog_len=",
 	"nduid=", "boardtype=" , "fb=" };
 
 char *kept_cmdline;
@@ -289,17 +291,3 @@ int nduid_to_serialno(char *nduid, char *serialno) {
 	serialno[j] = '\0';
 	return 0;
 }
-
-int hexval(char c) {
-	if (c <= '9' && c >= '0') {
-		return (c - '0');
-	}
-	if (c <= 'f' && c >= 'a') {
-		return (c - 'a' + 10);
-	}
-	if (c <= 'F' && c >= 'A') {
-		return (c - 'A' + 10);
-	}
-	return -1;
-}
-

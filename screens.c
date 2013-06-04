@@ -26,6 +26,7 @@
 #include "input.h"
 #include "lv.h"
 #include "lvset.h"
+#include "lib.h"
 
 #include <string.h>
 #include <unistd.h>
@@ -387,6 +388,9 @@ void info_screen(void) {
 	float percent;
 	FILE *fp;
 
+	qfscanf("/sys/class/power_supply/battery/charge_full", "%ld", 
+		&charge_full);
+
 	while (!ret) {
 		clear_screen();
 
@@ -402,10 +406,18 @@ void info_screen(void) {
 		}
 		pclose(fp);
 
+		qfscanf("/sys/class/power_supply/battery/charge_now", "%ld",
+			&charge_now);
+
+		percent = (float)charge_now / (float)charge_full * 100.0;
+		snprintf(battery_str, sizeof(battery_str),
+			"battery level = %.1f%%", percent);
+
 		text("information", 16,16, 4,4, 0xFFFFFFFF, 0xFF000000);
 		text("nsboot by willcast, 2013", 16,104, 2,2, 0xFF808080, 0xFF000000);
 		text(date_str, 16,156, 2,2, 0xFF808080, 0xFF000000);
-		text("touch to update", 16,198, 2,2, 0xFF808080, 0xFF000000);
+		text(battery_str, 16,198, 2,2, 0xFF808080, 0xFF000000);
+		text("touch to update", 16,240, 2,2, 0xFF808080, 0xFF000000);
 
 		text_box("back", 16,282, 160,70, 3, 0xFFFFFFFF,0xFF808080,0xFFFFFFFF);
 

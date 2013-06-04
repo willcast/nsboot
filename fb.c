@@ -31,6 +31,7 @@
 #include "touch.h"
 #include "fb.h"
 #include "log.h"
+#include "lib.h"
 
 int fb_fd;
 struct fb_var_screeninfo vinfo;
@@ -174,25 +175,16 @@ void text_box(const char *s, int x, int y, int w, int h, int z, uint32_t tc, uin
 }
 
 void set_brightness(int bright) {
-	int bright_fd, nchars;
-	char bright_str[4];
-
 	if (bright < 4) {
 		logprintf("1can't set brightness < 4");
 		return;
 	}
-
-	bright_fd = open("/sys/class/leds/lcd-backlight/brightness", O_WRONLY);
-	if (bright_fd < 0) {
-		logperror("error opening brightness");
+	if (bright > 255) {
+		logprintf("1can't set brightness > 255");
 		return;
 	}
-	nchars = snprintf(bright_str, sizeof(bright_str), "%d", bright);
 
-	if (write(bright_fd, bright_str, nchars) != nchars)
-		logperror("can't set brightness");
-
-	close(bright_fd);
+	qfprintf("/sys/class/leds/lcd-backlight/brightness", "%d", bright);
 }
 
 void ditch_stdouterr(void) {

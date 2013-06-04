@@ -34,14 +34,13 @@
 #include <sys/mount.h>
 #include <sys/time.h>
 
-#include "browse.h"
-#include "fb.h"
 #include "touch.h"
-#include "screens.h"
+#include "fb.h"
 #include "boot.h"
 #include "init.h"
 #include "lv.h"
 #include "log.h"
+#include "lib.h"
 
 void do_init(void) {
 	char ts_name[PATH_MAX];
@@ -75,7 +74,7 @@ void do_init(void) {
 	mount("none", "/sys", "sysfs", MS_SILENT, NULL);
 
 	logprintf("0disabling kernel messages");
-	code = WEXITSTATUS(system("echo 2 > /proc/sys/kernel/printk"));
+	qfprintf("/proc/sys/kernel/printk", "2");
 
 	logprintf("0enabling core dumps");
 	enable_coredumps();
@@ -94,7 +93,7 @@ void do_init(void) {
 
 	logprintf("0starting hotplug");
 	code = system("touch /etc/mdev.conf");
-	code = system("echo /bin/mdev > /proc/sys/kernel/hotplug");
+	qfprintf("/proc/sys/kernel/hotplug", "/bin/mdev");
 	if (code = WEXITSTATUS(system("mdev -s")))
 		logprintf("2hotplug failed with code %d", code);
 
@@ -116,10 +115,12 @@ void do_init(void) {
 	}
 	atexit(fb_close);
 
+	set_brightness(64);
+
 	start_adbd();
 
 	logprintf("0starting touchscreen service");
-	if (code = WEXITSTATUS(system("tssrv &"))) {
+	if (code = WEXITSTATUS(system("tssrv >/var/tssrv.out 2>/var/tssrv.err &"))) {
 		logprintf("3tssrv failed to start, code %d");
 		exit(1);
 	}
@@ -167,32 +168,31 @@ void do_shutdown(void) {
 	logprintf("0stopping tssrv");
 	code = system("killall tssrv");
 
-	logprintf("0stopping adbd");
 	code = system("killall adbd");
-	code = system("echo 0 > /sys/class/usb_composite/adb/enable");
-	code = system("echo 0 > /sys/class/usb_composite/rndis/enable");
+	qfprintf("/sys/class/usb_composite/adb/enable", "0");
+	qfprintf("/sys/class/usb_composite/rndis/enable", "0");
 
 	logprintf("0unmounting base volumes");
 	umount_lv("media");
 	umount_lv("root");
 
 	logprintf("0unmounting base partitions");
-
 	logprintf("0 - /mnt/boot");
 	umount("/mnt/boot");
 
-	logprintf("0 - /mnt/firmware");	
+	logprintf("0 - /mnt/firmware");
 	umount("/mnt/firmware");
 
 	logprintf("0disabling framebuffer");
 	if (is_fb_available()) fb_close();
 
 	logprintf("0disabling touch screen");
-	code = system("echo 0 > /sys/devices/platform/cy8ctma395/vdd");
+	qfprintf("/sys/devices/platform/cy8ctma395/vdd", "0");
 
 	logprintf("0unmounting all volumes");
 	code = chdir("/");
-	code = system("umount -a");
+	sync();
+	qfprintf("/proc/sysrq-trigger", "u");
 
 	logprintf("0syncing");
 	sync();
@@ -230,12 +230,11 @@ void symlink_binaries(void) {
 
 void enable_coredumps(void) {
 	struct rlimit unlim;
-	int code;
 
 	unlim.rlim_cur = RLIM_INFINITY;
 	unlim.rlim_max = RLIM_INFINITY;
 
-	code = system("echo '/var/core-%e' > /proc/sys/kernel/core_pattern");
+	qfprintf("/proc/sys/kernel/core_pattern", "/var/core-%%e");
 
 	setrlimit(RLIMIT_CORE, &unlim);
 }
@@ -243,9 +242,12 @@ void enable_coredumps(void) {
 void start_adbd(void) {
 	int code;
 
+	logprintf("0stopping adbf");
+	code = system("killall adbd");
+
 	logprintf("0starting adbd");
-	code = system("echo 1 > /sys/class/usb_composite/adb/enable");
-	code = system("echo 1 > /sys/class/usb_composite/rndis/enable");
+	qfprintf("/sys/class/usb_composite/adb/enable", "1");
+	qfprintf("/sys/class/usb_composite/rndis/enable", "1");
 	chmod("/dev/android_adb", 0777);
 	if (code = WEXITSTATUS(system("adbd >/var/adbd.log 2>/var/adbd.err &")))
 		logprintf("2adbd failed to start, code %d");
