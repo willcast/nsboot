@@ -62,12 +62,17 @@ void install_native(const char *tarname, const char *lv, int size) {
 
 	if (lv == NULL) lv = deduce_lv(tarname);
 
-	if (!lv_exists(lv))
-		new_lv(lv, size);
+	if (!lv_exists(lv)) {
+		if (size) new_lv(lv, size);
+		else {
+			logprintf("2volume does not exist");
+			return;
+		}
+	}
 
 	umount_lv(lv);
 
-	wipe_lv(lv);
+	if (size != -1) wipe_lv(lv);
 	mount_lv(lv);
 
 	snprintf(cmd, sizeof(cmd), "/mnt/%s", lv);

@@ -113,6 +113,8 @@ void installer_menu(void) {
 			0xFFFFFFFF,0xFFFFFF00,0xFFFFFFFF);
 		text_box("custom", 710,282, 124,52, 2,
 			0xFFFFFFFF,0xFFFFFF00,0xFFFFFFFF);
+		text_box("no wipe", 850,282, 142,52, 2,
+			0xFFFFFFFF,0xFFFFFF00,0xFFFFFFFF);
 
 		text("kexec .tar to LV:", 16,360, 2,2, 0xFFFF00FF, 0xFF000000);
 		text_box("default", 374,360, 142,52, 2,
@@ -162,9 +164,8 @@ void installer_menu(void) {
 			if (filename == NULL) continue;
 			lv = select_lv(0);
 			if (lv == NULL) continue;
-                        size = size_screen("for new volume", 1728, 8192);
 			if (confirm("install .tar.gz file"))
-	                         install_native(filename, lv, size);
+	                         install_native(filename, lv, 0);
 		} else if (in_box(714, 282, 124, 52)) {
 			filename = select_file(EXT, ".gz");
 			if (filename == NULL) continue;
@@ -173,6 +174,13 @@ void installer_menu(void) {
                         size = size_screen("for new volume", 1728, 8192);
 			if (confirm("install .tar.gz file"))
 				install_native(filename, lv, size);
+		} else if (in_box(850, 282, 160, 52)) {
+			filename = select_file(EXT, ".gz");
+			if (filename == NULL) continue;
+			lv = select_lv(0);
+			if (lv == NULL) continue;
+			if (confirm("install .tar.gz file"))
+	                         install_native(filename, lv, -1);
 		} else if (in_box(374, 360, 142, 52)) {
 			filename = select_file(EXT, ".tar");
 			if (filename == NULL) continue;
