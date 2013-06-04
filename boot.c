@@ -36,8 +36,8 @@
 #include "log.h"
 #include "init.h"
 
-const char *keepable_args[] = { "fbcon=", "klog=", "klog_len=", "nduid=",
-	"androidboot.serialno=", "boardtype=" };
+const char *keepable_args[] = { "fbcon=", "klog=", "klog_len=",
+	"nduid=", "boardtype=" , "fb=" };
 
 char *kept_cmdline;
 
@@ -50,13 +50,18 @@ void parse_proc_cmdline(void) {
 
 	char cmdline[PROC_CMDLINE_MAX], *cur_arg;
 
+	kept_cmdline = malloc(PROC_CMDLINE_MAX);
+	kept_cmdline[0] = '\0';
+
 	cmdline_fd = open("/proc/cmdline", O_RDONLY);
+
+	if (cmdline_fd < 0) {
+		logperror("1error opening /proc/cmdline");
+		return;
+	}
 
 	nchars = read(cmdline_fd, cmdline, PROC_CMDLINE_MAX - 1);
 	cmdline[nchars] = '\0';
-
-	kept_cmdline = malloc(PROC_CMDLINE_MAX);
-	kept_cmdline[0] = '\0';
 
 	close(cmdline_fd);
 
@@ -68,12 +73,26 @@ void parse_proc_cmdline(void) {
 }
 
 void check_keep_arg(char *arg) {
+	char *nduid, serialno[68];
 	for (int i = 0; i < ARRAY_SIZE(keepable_args); ++i) {
 		const char *chk_arg = keepable_args[i];
 		if (!strncmp(arg, chk_arg, strlen(chk_arg))) {
 			strcat(kept_cmdline, arg);
 			strcat(kept_cmdline, " ");
 		}
+	}
+	if (!strncmp(arg, "nduid=", 6)) {
+		nduid = arg + 6;
+		// "androidboot.serialno=" length is 25 
+		// actual serial num. length is 40
+		// whole string plus null byte is 66
+		// round up one dword, to 68
+		if (nduid_to_serialno(nduid, serialno) < 0) {
+			logprintf("1error generating android serialno");
+			return;
+		}
+		strcat(kept_cmdline, serialno);
+		strcat(kept_cmdline, " ");
 	}
 }
 
@@ -176,13 +195,13 @@ struct boot_item * add_boot_item(char *item_label) {
 }
 
 void scan_boot_lvs(void) {
-	char filename[64];
+	char filename[PATH_MAX];
 
 	update_lv_lists();
 
 	for (int i = 0; i < lv_count(); ++i) {
 		mount_lv(lv_name(i));
-		sprintf(filename, "/mnt/%s/boot/boot.cfg", lv_name(i));
+		snprintf(filename, sizeof(filename), "/mnt/%s/boot/boot.cfg", lv_name(i));
 		if (test_file(filename)) read_kb_file_from(lv_name(i));
 	}
 }
@@ -198,7 +217,7 @@ void boot_kexec(int entry_num) {
 	}
 
 	mount_lv(entry->cfgdev);
-	sprintf(cmd, "mount -o remount,ro %s", entry->cfgdev);
+	snprintf(cmd, sizeof(cmd), "mount -o remount,ro %s", entry->cfgdev);
 	if (code = WEXITSTATUS(system(cmd)))
 		logprintf("1can't remount read only, code %d", code);
 
@@ -235,3 +254,50 @@ void boot_kexec(int entry_num) {
 	logprintf("3kexec failed!");
 	exit(1);
 }
+
+// Thanks to jcsullins' moboot source for this
+// implementation and the following hexval()
+int nduid_to_serialno(char *nduid, char *serialno) {
+	int nduid_len, i, j, k;
+	char charset[] = "0123456789ABCDEFGHIJKLMNOPQRSTUV";
+	uint32_t val;
+	int hval, l;
+
+	nduid_len = strlen(nduid);
+
+	if (nduid_len != 40) return -1;
+
+	for (i = 0, k = 0, j = 0, val = 0; i < nduid_len; i++) {
+		hval = hexval(nduid[i]);
+		if (hval < 0) return -2;
+
+		val |= ((unsigned)hval & 0xF) << (k * 4);
+
+		k++;
+
+		if (k == 5) {
+			for (l = 0; l < 4; l++) {
+				serialno[j++] = charset[(val & 0x1F)];
+				val >>= 5;
+			}
+			k = 0;
+			val = 0;
+		}
+	}
+	serialno[j] = '\0';
+	return 0;
+}
+
+int hexval(char c) {
+	if (c <= '9' && c >= '0') {
+		return (c - '0');
+	}
+	if (c <= 'f' && c >= 'a') {
+		return (c - 'a' + 10);
+	}
+	if (c <= 'F' && c >= 'A') {
+		return (c - 'A' + 10);
+	}
+	return -1;
+}
+

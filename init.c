@@ -56,12 +56,6 @@ void do_init(void) {
 	init_log();
 	logprintf("0welcome to nsboot");
 
-	logprintf("0symlinking binaries");
-	symlink_binaries();
-
-	logprintf("0parsing /proc/cmdline");
-	parse_proc_cmdline();
-
 	logprintf("0mounting virtual filesystems");
 
 	mkdir("/dev", 0755);
@@ -86,11 +80,17 @@ void do_init(void) {
 	logprintf("0enabling core dumps");
 	enable_coredumps();
 
+	logprintf("0parsing /proc/cmdline");
+	parse_proc_cmdline();
+
 	logprintf("0installing busybox");
 	if (code = WEXITSTATUS(system("busybox --install -s"))) {
 		logprintf("3busybox install failed with code %d", code);
 		exit(1);
 	}
+
+	logprintf("0symlinking binaries");
+	symlink_binaries();
 
 	logprintf("0starting hotplug");
 	code = system("touch /etc/mdev.conf");
@@ -115,6 +115,8 @@ void do_init(void) {
 		exit(1);
 	}
 	atexit(fb_close);
+
+	start_adbd();
 
 	logprintf("0starting touchscreen service");
 	if (code = WEXITSTATUS(system("tssrv &"))) {

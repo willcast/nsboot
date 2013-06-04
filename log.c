@@ -99,6 +99,7 @@ void display_wholelog(void) {
 	} else for (int i = 0; i < loglist->used; ++i)
 		fprintf(stderr, "%s\n", loglist->data[i]+1);
 }
+
 void dump_log_to_file(const char *path) {
 	FILE *log_fp;
 	int status = 0;

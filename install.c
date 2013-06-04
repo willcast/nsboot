@@ -61,11 +61,11 @@ void install_native(const char *tarname, const char *lv, int size) {
 	wipe_lv(lv);
 	mount_lv(lv);
 
-	sprintf(cmd, "/mnt/%s", lv);
+	snprintf(cmd, sizeof(cmd), "/mnt/%s", lv);
 	if (chdir(cmd) == -1)
 		logperror("can't chdir into target root");
 
-	sprintf(cmd, "tar -xzpf %s", tarname);
+	snprintf(cmd, sizeof(cmd), "tar -xzpf %s", tarname);
 	logprintf("0extracting .tar.gz file, this may take 10+ minutes");
 	if (code = WEXITSTATUS(system(cmd)))
 		logprintf("2extraction failed with exit code %d", code);
@@ -82,7 +82,7 @@ void install_android(const char *zipname, const char *base, int flags) {
 
 	umount_lv_set(base);
 
-	sprintf(cmd, "%s-data", base);
+	snprintf(cmd, sizeof(cmd), "%s-data", base);
 	if (!lv_exists(cmd)) {
 		deduce_lv_set_size(base, &sys, &dat, &cac);
 		new_lv_set(base, sys, dat, cac);
@@ -92,12 +92,12 @@ void install_android(const char *zipname, const char *base, int flags) {
 		wipe_lv(cmd);
 
 	if (flags & WIPE_SYSTEM) {
-		sprintf(cmd, "%s-system", base);
+		snprintf(cmd, sizeof(cmd), "%s-system", base);
 		wipe_lv(cmd);
 	}
 
 	if (flags & WIPE_CACHE) {
-		sprintf(cmd, "%s-cache", base);
+		snprintf(cmd, sizeof(cmd), "%s-cache", base);
 		wipe_lv(cmd);
 	}
 
@@ -105,20 +105,20 @@ void install_android(const char *zipname, const char *base, int flags) {
 
 	if (getcwd(pwd, PATH_MAX) == NULL)
 		logperror("getcwd");
-	sprintf(cmd, "/mnt/%s", base);
+	snprintf(cmd, sizeof(cmd), "/mnt/%s", base);
 	if (chdir(cmd) == -1)
 		logperror("chdir into root of new install");
 
-	sprintf(cmd, "unzip -qo %s", zipname);
+	snprintf(cmd, sizeof(cmd), "unzip -qo %s", zipname);
 	logprintf("0extracting zip file");
 	if (code = WEXITSTATUS(system(cmd)))
 		logprintf("2unzipping failed with exit code %d", code);;
 
-	sprintf(cmd, "/mnt/%s/system/etc/firmware/q6.mdt", base);
+	snprintf(cmd, sizeof(cmd), "/mnt/%s/system/etc/firmware/q6.mdt", base);
 	if (!test_file(cmd)) {
 		mount_lv("firmware");
 		logprintf("0copying firmware");
-		sprintf(cmd,
+		snprintf(cmd, sizeof(cmd),
 			"cp /mnt/firmware/IMAGE/* /mnt/%s/system/etc/firmware",
 			base);
 		if (code = WEXITSTATUS(system(cmd)))
@@ -136,13 +136,15 @@ void install_android(const char *zipname, const char *base, int flags) {
 	if (code = WEXITSTATUS(system("bash updatescript")))
 		logprintf("0updater script exited with code %d", code);
 
-	sprintf(cmd, "/mnt/%s/boot.img", base);
+	snprintf(cmd, sizeof(cmd), "/mnt/%s/boot.img", base);
 	if (test_file(cmd) && (flags & INST_MOBOOT)) {
-		sprintf(cmd, "/mnt/%s/moboot.splash.CyanogenMod.tga", base);
+		snprintf(cmd, sizeof(cmd),
+			"/mnt/%s/moboot.splash.CyanogenMod.tga", base);
 		if (test_file(cmd)) {
 			logprintf("0installing moboot splash");
-			sprintf(cmd,
-				"cp moboot.splash.CyanogenMod.tga /mnt/boot/moboot.splash.%s.tga",
+			snprintf(cmd, sizeof(cmd),
+				"cp moboot.splash.CyanogenMod.tga "
+				"/mnt/boot/moboot.splash.%s.tga",
 				base);
 			if (code = WEXITSTATUS(system(cmd)))
 				logprintf("2splash copy failed with code %d", code);
@@ -150,39 +152,49 @@ void install_android(const char *zipname, const char *base, int flags) {
 
 		logprintf("0patching uImage");
 		if (code = WEXITSTATUS(system("uimage-extract boot.img")))
-			logprintf("2uImage extraction failed with code %d", code);
+			logprintf("2uImage extraction failed with code %d",
+				code);
 		if (code = WEXITSTATUS(system("mv ramdisk.img ramdisk.gz")))
-			logprintf("2renaming of ramdisk failed with code %d", code);
+			logprintf("2renaming of ramdisk failed with code %d",
+				code);
 		if (code = WEXITSTATUS(system("gunzip ramdisk.gz")))
-			logprintf("2ramdisk gunzipping failed with code %d", code);
+			logprintf("2ramdisk gunzipping failed with code %d",
+				code);
 
 		mkdir("extracted", 0755);
 		if (chdir("extracted") == -1)
-			logperror("error changing directory into extraction area");
+			logperror("error changing directory into extraction "
+				" area");
 		if (code = WEXITSTATUS(system("cpio -i < ../ramdisk")))
-			logprintf("2extraction of ramdisk failed with code %d", code);
+			logprintf("2extraction of ramdisk failed with code %d",
+				code);
 
-		sprintf(cmd, "sed -i -e 's/cm-system/%s-system/' -e "
-	"'s/cm-data/%s-data/' -e 's/cm-cache/%s-cache/' init.tenderloin.rc",
-		base, base, base);
+		snprintf(cmd, sizeof(cmd), "sed -i -e 's/cm-system/%s-system/'"
+			" -e 's/cm-data/%s-data/' -e 's/cm-cache/%s-cache/' "
+			"init.tenderloin.rc", base, base, base);
 		if (code = WEXITSTATUS(system(cmd)))
-			logprintf("2init script patching failed with code %s", code);
-		if (code = WEXITSTATUS(system("find . | cpio -o --format=newc"
+			logprintf("2init script patching failed with code %s",
+				code);
+		if (code = WEXITSTATUS(system("find . | cpio -o --format=newc "
 			"| lzma > ../ramdisk")))
-			logprintf("2repacking of ramdisk failed with code %d", code);
+			logprintf("2repacking of ramdisk failed with code %d",
+				code);
 
-		if (chdir("..") == -1) logperror("changing into parent directory failed");
-		if (code = WEXITSTATUS(system("mkimage -A arm -O linux -T kernel -C "
-	"none -a 0x40208000 -e 0x40208000 -n kernel -d kernel.img uKernel")))
+		if (chdir("..") == -1)
+			logperror("changing into parent directory failed");
+		if (code = WEXITSTATUS(system("mkimage -A arm -O linux -T "
+			"kernel -C none -a 0x40208000 -e 0x40208000 -n kernel"
+			" -d kernel.img uKernel")))
 			logprintf("2mkimage for kernel failed with code %d", code);
-		if (code = WEXITSTATUS(system("mkimage -A arm -O linux -T ramdisk -C"
-	" none -a 0x60000000 -e 0x60000000 -n ramdisk -d ramdisk uRamdisk")))
+		if (code = WEXITSTATUS(system("mkimage -A arm -O linux -T "
+			"ramdisk -C none -a 0x60000000 -e 0x60000000 -n "
+			"ramdisk -d ramdisk uRamdisk")))
 			logprintf("2mkimage for ramdisk failed with code %d", code);
 		if (code = WEXITSTATUS(system("mkimage -A arm -O linux -T multi -C "
 	"none -a 0x40208000 -e 0x6000000 -n multi -d uKernel:uRamdisk uImage")))
 			logprintf("2mkimage for multi image failed with code %d", code);
 
-		sprintf(cmd, "mv uImage /mnt/boot/uImage.%s", base);
+		snprintf(cmd, sizeof(cmd), "mv uImage /mnt/boot/uImage.%s", base);
 		if (code = WEXITSTATUS(system(cmd)))
 			logprintf("2installation of patched uImage failed with code %d", code);
 		unlink("kernel.img");
@@ -198,13 +210,13 @@ void install_android(const char *zipname, const char *base, int flags) {
 void delete_lv_set(const char *set) {
 	char lv[32];
 
-	logprintf("0deleting volume set");
+	logprintf("0deleting volume set %s", set);
 
-	sprintf(lv, "%s-system", set);
+	snprintf(lv, sizeof(lv), "%s-system", set);
 	delete_lv(lv);
-	sprintf(lv, "%s-data", set);
+	snprintf(lv, sizeof(lv), "%s-data", set);
 	delete_lv(lv);
-	sprintf(lv, "%s-cache", set);
+	snprintf(lv, sizeof(lv), "%s-cache", set);
 	delete_lv(lv);
 }
 
@@ -218,7 +230,7 @@ void install_tar(const char *file, const char *instlv) {
 		logprintf("2cleaning of work area failed with code %d", code);
 	mkdir("/mnt/tar", 0755);
 
-	sprintf(cmd, "tar -xf %s -C /mnt/tar", file);
+	snprintf(cmd, sizeof(cmd), "tar -xf %s -C /mnt/tar", file);
 	if (code = WEXITSTATUS(system(cmd)))
 		logprintf("2untarring failed with code %d", code);
 
@@ -243,7 +255,7 @@ void install_tar(const char *file, const char *instlv) {
 
 	if (instlv != NULL) {
 		logprintf("1changing root LV from %s to %s", lv, instlv);
-		sprintf(cmd, "sed -ie 's/%s/%s/' /mnt/tar/boot.cfg", lv, instlv);
+		snprintf(cmd, sizeof(cmd), "sed -ie 's/%s/%s/' /mnt/tar/boot.cfg", lv, instlv);
 		code = WEXITSTATUS(system(cmd));
 
 		lv = strdup(instlv);

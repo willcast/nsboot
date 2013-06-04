@@ -43,4 +43,7 @@ void scan_boot_lvs(void);
 void free_boot_items(void);
 void boot_kexec(int);
 
+int nduid_to_serialno(char *, char *);
+int hexval(char);
+
 #endif
