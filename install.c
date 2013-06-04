@@ -36,7 +36,15 @@
 #include "lvset.h"
 #include "install.h"
 
-const char *update_str = "cat META-INF/com/google/android/updater-script | grep -v '^\\(assert\\)\\|\\(package_extract_.*\\)\\|\\(^mount\\)\\|\\(format\\)\\|\\(run_program\\)\\|\\(^umount\\)\\|\\(^unmount\\)\\|\\(show_progress\\)\\|\\(ui_print\\)\\|\\(^delete\\)' | sed 's/^set_perm(\\([0123456789]\\+\\), \\+\\([0123456789]\\+\\), \\([0123456789]\\+\\), \"\\(.*\\)\");/chown \\1:\\2 \\4 ; chmod \\3 \\4/' | sed 's/^set_perm_recursive(\\([0123456789]\\+\\), \\+\\([0123456789]\\+\\), \\([0123456789]\\+\\), \\([0123456789]\\+\\), \"\\(.*\\)\");/chown -R \\1:\\2 \\5 ; chmod -R \\3 \\5 ; find \\5 -type f -exec chmod \\4 {} \\\\;/' | sed 's/,$/ \\\\/' | sed 's/^symlink(\\(\"[A-z\\.\\-]*\"\\), /export LINK=\\1 ; for i in /' | sed 's/\\(\"\\)\\|\\(,\\)//g' | sed 's/);/ ; do ln -s $LINK $i ; done/' | sed 's/\\/system/system/g' > updatescript";
+const char *update_str = "cat META-INF/com/google/android/updater-script"
+"| grep -v '^\\(assert\\)\\|\\(package_extract_.*\\)\\|\\(^mount\\)\\|\\(format\\)\\|\\(run_program\\)\\|\\(^umount\\)\\|\\(^unmount\\)\\|\\(show_progress\\)\\|\\(ui_print\\)\\|\\(^delete\\)' "
+"| sed 's/^set_perm(\\([0123456789]\\+\\), \\+\\([0123456789]\\+\\), \\([0123456789]\\+\\), \"\\(.*\\)\");/chown \\1:\\2 \\4 ; chmod \\3 \\4/' | sed 's/^set_perm_recursive(\\([0123456789]\\+\\), \\+\\([0123456789]\\+\\), \\([0123456789]\\+\\), \\([0123456789]\\+\\), \"\\(.*\\)\");/chown -R \\1:\\2 \\5 ; chmod -R \\3 \\5 ; find \\5 -type f -exec chmod \\4 {} \\\\;/' "
+"| sed 's/,$/ \\\\/' "
+"| sed 's/^symlink(\\(\"[\\/A-z\\.\\-]*\"\\), /export LINK=\\1 ; for i in /' "
+"| sed 's/\\(\"\\)\\|\\(,\\)//g' "
+"| sed 's/);/ ; do ln -s $LINK $i ; done/' "
+"| sed 's/\\/system/system/g'"
+"> updatescript";
 
 int test_file(const char *path) {
 	struct stat test;

@@ -17,6 +17,5 @@ mkdir -p /mnt/media
 mount /dev/store/media /mnt/media
 mkdir -p /mnt/media/nsboot/logs
 cp /var/* /mnt/media/nsboot/logs/
-sleep 10
 sync
 reboot
