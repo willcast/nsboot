@@ -63,7 +63,7 @@ void install_native(const char *tarname, const char *lv, int size) {
 	if (lv == NULL) lv = deduce_lv(tarname);
 
 	if (!lv_exists(lv)) {
-		if (size) new_lv(lv, size);
+		if (size > 0) new_lv(lv, size);
 		else {
 			logprintf("2volume does not exist");
 			return;
