@@ -114,8 +114,10 @@ void read_kb_file_from(char *lv) {
 	}
 
 	while (!(feof(cfg_fp) || ferror(cfg_fp))) {
-		if (fgets(line, sizeof(line), cfg_fp) == NULL)
+		if (fgets(line, sizeof(line), cfg_fp) == NULL) {
+			fclose(cfg_fp);
 			return;
+		}
 
 		// ignore comments
 		if (line[0] == '#') continue;

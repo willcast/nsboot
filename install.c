@@ -202,8 +202,6 @@ void install_android(const char *zipname, const char *base, int flags) {
 		unlink("uImage");
 	}
 
-	unlink("boot.img");
-	unlink("updatescript");
 	if (chdir(pwd) == -1) logperror("restoration of working directory failed");
 }
 
