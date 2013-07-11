@@ -104,7 +104,7 @@ void rect(int x, int y, int w, int h, uint32_t color) {
 	hline(x, y, w, color);
 	hline(x, y+h, w, color);
 	vline(x, y, h, color);
-	vline(x+w, y, h, color);
+	vline(x+w, y, h+1, color);
 }
 
 int load_font(char *fname) {
@@ -159,6 +159,7 @@ void clear_screen(void) {
 	for (int y = 0; y < FBHEIGHT; ++y)
 		for (int x = 0; x < FBWIDTH; ++x)
 			put_pixel(x, y, 0xFF000000);
+	draw_statusbar();
 }
 
 void fill_rect(int x, int y, int w, int h, uint32_t color) {
@@ -210,4 +211,37 @@ void reclaim_stdouterr(void) {
 
     close(save_out);
     close(save_err);
+}
+
+void draw_statusbar(void) {
+	char date_str[32], battery_str[32];
+	long charge_full, charge_now;
+	float percent;
+	FILE *fp;
+
+	qfscanf("/sys/class/power_supply/battery/charge_full", "%ld",
+		&charge_full);
+
+	fp = popen("date +%H:%M:%S", "r");
+	if (fp == NULL) return;
+
+	if (fgets(date_str, sizeof(date_str), fp) == NULL) {
+		logperror("error piping from date cmd");
+		return;
+	}
+	pclose(fp);
+
+	qfscanf("/sys/class/power_supply/battery/charge_now", "%ld",
+		&charge_now);
+
+	percent = (float)charge_now / (float)charge_full * 100.0;
+	snprintf(battery_str, sizeof(battery_str),
+		"%.2f%%", percent);
+
+	rect(984, 2, 28, 11, 0xFFFFFFFF);
+	rect(1012, 4, 2, 7, 0xFFFFFFFF);
+	fill_rect(986, 4, percent / 4, 8, 0xFFFFFFFF);
+	text(battery_str, 926,0, 1,1, 0xFFFFFFFF, 0xFF000000);
+
+	text(date_str, 464,0, 1,1, 0xFFA0A0A0, 0xFF000000);
 }

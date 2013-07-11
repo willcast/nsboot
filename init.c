@@ -224,8 +224,9 @@ void symlink_binaries(void) {
 	unlink("/bin/dosfsck");
 	if (symlink("/mnt/root/usr/sbin/dosfsck", "/bin/dosfsck") == -1)
 		logperror("symlink dosfsck failed");
-
-
+	unlink("/bin/gzip");
+	if (symlink("/bin/pigz", "/bin/gzip") == -1)
+		logperror("symlink gzip failed");
 }
 
 void enable_coredumps(void) {

@@ -51,3 +51,4 @@ External programs (unmodified source, statically linked and stripped) used in th
  * kexec-tools (kexec)
  * ts_srv (tssrv)
  * GNU tar
+ * pigz

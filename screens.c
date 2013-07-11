@@ -46,7 +46,7 @@ void main_menu(void) {
 
 	while (!quit) {
 		clear_screen();
-		text("main menu", 8, 8, 6, 6, 0xFFFFFFFF, 0xFF000000);
+		text("main menu", 16, 16, 6, 6, 0xFFFFFFFF, 0xFF000000);
 
 		text_box("quit", 16,128, 160,88, 4, 0xFFFFFFFF,0xFFFF0000,0xFFFFFFFF);
 		text_box("power off", 192,128, 340,88, 4, 0xFFFFFFFF,0xFFFF0000,0xFFFFFFFF);

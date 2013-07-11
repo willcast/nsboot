@@ -45,6 +45,7 @@ void text(const char *, int, int, int, int, uint32_t, uint32_t);
 
 // UI functions
 void text_box(const char *, int, int, int, int, int, uint32_t, uint32_t, uint32_t);
+void draw_statusbar(void);
 
 void status(char *);
 void status_error(char *);
