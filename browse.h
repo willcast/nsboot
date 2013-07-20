@@ -23,6 +23,8 @@
 #include <dirent.h>
 #include <sys/stat.h>
 
+#define LV_MAX 64
+
 struct dir_list {
 	struct dirent **dents;
 	struct stat **stats;
@@ -62,4 +64,5 @@ void copy_file(const char *, const char *);
 void move_file(const char *, const char *);
 void delete_file(const char *);
 
+extern long lv_sizes[LV_MAX];
 #endif

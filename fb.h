@@ -57,4 +57,6 @@ void steprintf(const char *fmt, ...);
 
 void set_brightness(int);
 
+extern char sbstr[32]; // status bar string.
+
 #endif

@@ -69,6 +69,23 @@ void qfscanf(const char *fname, const char *fmt, ...) {
 	fclose(fp);
 }
 
+void qpscanf(const char *cmd, const char *fmt,  ...) {
+	va_list args;
+	FILE *fp;
+
+	fp = popen(cmd, "r");
+	if (fp == NULL) {
+		logprintf("2 can't popen %s: %s", cmd,
+			strerror(errno));
+		return;
+	}
+
+	va_start(args, fmt);
+	vfscanf(fp, fmt, args);
+	va_end(args);
+
+	pclose(fp);	
+}
 
 int hexval(char c) {
 	if (c <= '9' && c >= '0') {

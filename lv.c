@@ -196,6 +196,13 @@ void resize_lv(const char *lv, enum resizemode mode, long arg) {
 	long oldsize, newsize, space, free;
         int code;
 
+	for (int i = 0; i < 5; ++i) {
+		if (is_lv_mounted(lv)) umount_lv(lv);
+	}
+	if (is_lv_mounted(lv)) {
+		logprintf("3refusing to resize a volume which is likely in use.");
+	}
+
 	oldsize = get_lv_size(lv);
 	if (oldsize == -1) return;
 	space = get_free_vg_space();

@@ -20,6 +20,8 @@
 #ifndef NSBOOT_INPUT_H
 #define NSBOOT_INPUT_H
 
+#define PERPAGE 12
+
 void boot_menu(void);
 void info_screen(void);
 

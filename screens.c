@@ -41,264 +41,446 @@ extern int sel;
 
 void main_menu(void) {
 	int ts_x, ts_y;
+	int _y = 48;
 	int quit = 0;
 	char *file1;
 
-	while (!quit) {
-		clear_screen();
-		text("main menu", 16, 16, 6, 6, 0xFFFFFFFF, 0xFF000000);
+	DECL_LINE(rebootbutton);
+	DECL_LINE(offbutton);
+	DECL_LINE(bootbutton);
+	DECL_LINE(installbutton);
+	DECL_LINE(utilitybutton);
 
-		text_box("quit", 16,128, 160,88, 4, 0xFFFFFFFF,0xFFFF0000,0xFFFFFFFF);
-		text_box("power off", 192,128, 340,88, 4, 0xFFFFFFFF,0xFFFF0000,0xFFFFFFFF);
-		text_box("reboot", 548,128, 232,88, 4, 0xFFFFFFFF,0xFFFF0000,0xFFFFFFFF);
-		text_box("boot menu", 16,224, 336,88, 4, 0xFFFFFFFF,0xFF008000,0xFFFFFFFF);
-		text_box("installer menu", 368,224, 520,88, 4, 0xFFFFFFFF,0xFF0000FF,0xFFFFFFFF);
-		text_box("utility menu", 16,320, 448,88, 4, 0xFFFFFFFF, 0xFF606060, 0xFFFFFFFF);
-		text_box("file browser", 496,320, 448,88, 4, 0xFFFFFFFF,0xFF606060, 0xFFFFFFFF);
-		text_box("information", 16,416, 412,88, 4, 0xFFFFFFFF, 0xFF606060, 0xFFFFFFFF);
+	while (!quit) {
+		strcpy(sbstr, "nsboot");
+
+		clear_screen();
+
+		START_LIST(8, 48, 304, 0xFF0000C0, 0xFF0000FF, 0xFF8080FF)
+
+		DRAW_LINE(rebootbutton, "reboot", "reboot the tablet now")
+		DRAW_LINE(offbutton, "off", "turn the tablet off now")
+		DRAW_LINE(bootbutton, "boot", "enter the boot menu")
+		DRAW_LINE(installbutton, "install", "enter the installer menu")
+		DRAW_LINE(utilitybutton, "utilities", "enter the utilities menu");
 
 		ts_read(&ts_x, &ts_y);
 
-		if (in_box(16, 128, 160, 88)) {
-			logprintf("0have a nice day");
-			quit = 1;
-		} else if (in_box(192, 128, 340, 88) && confirm("power off")) {
+		if PRESSED(offbutton) {
 			logprintf("1powering off...");
 			sync();
 			reboot(RB_POWER_OFF);
-		} else if (in_box(548, 128, 232, 88) && confirm("reboot")) {
+			quit = 1;
+		} else if PRESSED(rebootbutton) {
 			logprintf("1rebooting...");
 			sync();
 			reboot(RB_AUTOBOOT);
-		} else if (in_box(16, 224, 336, 88))
+			quit = 1;
+		} else if PRESSED(bootbutton) {
 			boot_menu();
-		else if (in_box(368, 224, 520, 88))
+ 		} else if PRESSED(installbutton) {
 			installer_menu();
-		else if (in_box(16, 320, 448, 88))
+		} else if PRESSED(utilitybutton) {
 			util_menu();
-		else if (in_box(480, 320, 448, 88)) {
-			file1 =	select_file(ANY, NULL);
-			if (file1 == NULL) continue;
-			task_menu(file1);
-		} else if (in_box(16, 416, 412, 88))
-     			info_screen();
+		}
 	}
 }
 
 void installer_menu(void) {
 	int ts_x, ts_y;
 	int ret = 0;
-	char *filename, *lv, *lv_set;
-	int flags;
-	long size;
+	char *filename;
+
+	DECL_LINE(backbutton);
+	DECL_LINE(zipbutton);
+	DECL_LINE(tgzbutton);
+	DECL_LINE(tarbutton);
+	DECL_LINE(uimgbutton);
+	DECL_LINE(replacebutton);
 
 	while (!ret) {
+		strcpy(sbstr, "install");
+
 		clear_screen();
-		text("installer menu", 8, 8, 6, 6, 0xFF0000FF, 0xFF000000);
 
-		text_box("back", 16,128, 124,70, 3, 0xFFFFFFFF,0xFF606060,0xFFFFFFFF);
+		START_LIST(16, 48, 416, 0xFF00C000, 0xFF00FF00, 0xFF80FF80);
 
-		text(".zip file to set:", 16,214, 2,2, 0xFF00FFFF, 0xFF000000);
-		text_box("default", 374,214, 142,52, 2,
-			0xFFFFFFFF,0xFF00FFFF,0xFFFFFFFF);
-		text_box("existing", 534,214, 160,52, 2,
-			0xFFFFFFFF,0xFF00FFFF,0xFFFFFFFF);
-		text_box("custom", 710,214, 124,52, 2,
-			0xFFFFFFFF,0xFF00FFFF,0xFFFFFFFF);
-
-		text(".tar.gz file to LV:", 16,282, 2,2, 0xFFFFFF00, 0xFF000000);
-		text_box("default", 374,282, 142,52, 2,
-			0xFFFFFFFF,0xFFFFFF00,0xFFFFFFFF);
-		text_box("existing", 534,282, 160,52, 2,
-			0xFFFFFFFF,0xFFFFFF00,0xFFFFFFFF);
-		text_box("custom", 710,282, 124,52, 2,
-			0xFFFFFFFF,0xFFFFFF00,0xFFFFFFFF);
-		text_box("no wipe", 850,282, 142,52, 2,
-			0xFFFFFFFF,0xFFFFFF00,0xFFFFFFFF);
-
-		text("kexec .tar to LV:", 16,360, 2,2, 0xFFFF00FF, 0xFF000000);
-		text_box("default", 374,360, 142,52, 2,
-			0xFFFFFFFF,0xFFFF00FF,0xFFFFFFFF);
-		text_box("existing", 534,360, 160,52, 2,
-			0xFFFFFFFF,0xFFFF00FF,0xFFFFFFFF);
-
-		text_box("uImage kernel to boot partition", 16,428, 574,52, 2,
-			0xFFFFFFFF,0xFF0000FF,0xFFFFFFFF);
-
-		text_box("replace moboot with nsboot", 16,486, 484,52, 2,
-			0xFFFFFFFF,0xFFFF0000,0xFFFFFFFF);
+		DRAW_LINE(backbutton, "back", "return to main menu");
+		DRAW_LINE(zipbutton, "install .zip", "install a .zip file (Android ROM/gapps/mod)");
+		DRAW_LINE(tgzbutton, "install .tar.gz", "install a .tar.gz file (Linux distro, or nsboot backup)");
+		DRAW_LINE(tarbutton, "install .tar", "install a .tar file (kexec kernel)");
+		DRAW_LINE(uimgbutton, "install uImage", "install a kernel for moboot");
+		DRAW_LINE(replacebutton, "make nsboot default", "make sure all your OSes work with it first");
 
 		ts_read(&ts_x, &ts_y);
 
-		if (in_box(16, 128, 124, 70)) ret = 1;
-		else if (in_box(374, 214, 142, 52)) {
-			filename = select_file(EXT, ".zip");
-			if (filename == NULL) continue;
-			flags = android_options();
-			if (confirm("install Android"))
-                                install_android(filename, NULL, flags);
-		} else if (in_box(534, 214, 160, 52)) {
-			filename = select_file(EXT, ".zip");
-			if (filename == NULL) continue;
-			lv_set = select_lv_set();
-			if (lv_set == NULL) continue;
-			flags = android_options();
-			if (confirm("install Android"))
-                                install_android(filename, lv_set, flags);
-		} else if (in_box(714, 214, 124, 52)) {
-			filename = select_file(EXT, ".zip");
-			if (filename == NULL) continue;
-			lv_set = text_input("enter custom LV set name:");
-			if ((lv_set == NULL) || (lv_set[0] == '\0')) continue;
-			flags = android_options();
-			if (confirm("install Android"))
-				install_android(filename, lv_set, flags);
-		} else if (in_box(374, 282, 142, 52)) {
-			filename = select_file(EXT, ".gz");
-			if (filename == NULL) continue;
-                        size = size_screen("for new volume", 1728, 8192);
-			if (confirm("install .tar.gz file"))
-                                install_native(filename, NULL, size);
-		} else if (in_box(534, 282, 160, 52)) {
-			filename = select_file(EXT, ".gz");
-			if (filename == NULL) continue;
-			lv = select_lv(0);
-			if (lv == NULL) continue;
-			if (confirm("install .tar.gz file"))
-	                         install_native(filename, lv, 0);
-		} else if (in_box(714, 282, 124, 52)) {
-			filename = select_file(EXT, ".gz");
-			if (filename == NULL) continue;
-			lv = text_input("enter custom LV name:");
-			if ((lv == NULL) || (lv[0] == '\0')) continue;
-                        size = size_screen("for new volume", 1728, 8192);
-			if (confirm("install .tar.gz file"))
-				install_native(filename, lv, size);
-		} else if (in_box(850, 282, 160, 52)) {
-			filename = select_file(EXT, ".gz");
-			if (filename == NULL) continue;
-			lv = select_lv(0);
-			if (lv == NULL) continue;
-			if (confirm("install .tar.gz file"))
-	                         install_native(filename, lv, -1);
-		} else if (in_box(374, 360, 142, 52)) {
-			filename = select_file(EXT, ".tar");
-			if (filename == NULL) continue;
-			if (confirm("install kexec .tar"))
-                                install_tar(filename, NULL);
-		} else if (in_box(534, 360, 142, 52)) {
-			filename = select_file(EXT, ".tar");
-			if (filename == NULL) continue;
-			lv = select_lv(0);
-			if (lv == NULL) continue;
-			if (confirm("install kexec .tar"))
-                                install_tar(filename, lv);
-		} else if (in_box(16, 428, 718, 52)) {
+		if PRESSED(backbutton) ret = 1;
+		else if PRESSED(zipbutton) ret = zip_menu();
+		else if PRESSED(tgzbutton) ret = tgz_menu();
+		else if PRESSED(tarbutton) ret = tar_menu();
+		else if (PRESSED(replacebutton) && confirm("replace moboot"))
+			replace_moboot();
+		else if PRESSED(uimgbutton) {
 			filename = select_file(BASE, "uImage.");
 			if (filename == NULL) continue;
 			if (confirm("install uImage"))
                                 install_uimage(filename);
-		} else if (in_box(16, 486, 502, 52)) {
-			if (confirm("replace moboot")) replace_moboot();
 		}
 	}
+}	
+
+int zip_menu(void) {
+	char *filename = NULL;
+	char *lv_set = NULL;
+	int ret = 0;
+	int ts_x, ts_y;
+	int flags;	
+
+	DECL_LINE(backbutton);
+	DECL_LINE(homebutton);
+	DECL_LINE(selzip);
+	DECL_LINE(sellvset);
+	DECL_TOGL(wipesys, 1);
+	DECL_TOGL(wipedat, 1);
+	DECL_TOGL(wipecac, 1);
+	DECL_LINE(doit);
+
+	while (!ret) {
+		strcpy(sbstr, "install ZIP");
+
+		clear_screen();
+
+		START_LIST(16, 48, 384, 0xFF00C000, 0xFF00FF00, 0xFF80FF80);		
+
+		DRAW_LINE(backbutton, "back", "return to installer menu");	
+		DRAW_LINE(homebutton, "home", "return to main menu");	
+		DRAW_LINE(selzip, "select zip", "browse to the ZIP you want to install");
+		DRAW_LINE(sellvset, "select volume set", "select the volume set to install to (you can create one\n"
+												"from utilities)");
+		DRAW_TOGL(wipesys, "wipe system", "ON if you want to wipe /system before installing\n"
+										  "for installing new ROMs)");
+		DRAW_TOGL(wipedat, "wipe data", "ON if you want to wipe /data (aka factory reset)\n"
+										"before installing");
+		DRAW_TOGL(wipecac, "wipe cache", "ON if you want to wipe /cache (should almost always say YES)");
+		DRAW_LINE(doit, "install now", "install the ZIP now");
+
+		ts_read(&ts_x, &ts_y);
+
+		if PRESSED(backbutton) ret = 1;
+		else if PRESSED(homebutton) ret = 2;
+		else if PRESSED(selzip) filename = select_file(EXT, ".zip");
+		else if PRESSED(sellvset) lv_set = select_lv_set();
+		else if (PRESSED(doit) && (filename != NULL) && (lv_set != NULL)) {
+			flags = togl_wipesys * WIPE_SYSTEM +
+					togl_wipedat * WIPE_DATA + 
+					togl_wipecac * WIPE_CACHE;
+			install_android(filename, lv_set, flags);	 
+		}
+
+		DO_TOGL(wipesys);
+		DO_TOGL(wipedat);
+		DO_TOGL(wipecac);
+	}
+	return (ret & 2);
+}
+
+int tgz_menu(void) {
+	char *filename = NULL;
+	char *lv = NULL;
+	int ret = 0;
+	int ts_x, ts_y;
+
+	DECL_LINE(backbutton);
+	DECL_LINE(homebutton);
+	DECL_LINE(seltgz);
+	DECL_LINE(sellv);
+	DECL_TOGL(wipe, 1);
+	DECL_LINE(doit);
+
+	while (!ret) {
+		clear_screen();
+
+		strcpy(sbstr, "install .tar.gz");
+
+		START_LIST(16, 48, 352, 0xFF00C000, 0xFF00FF00, 0xFF80FF80);		
+
+		DRAW_LINE(backbutton, "back", "return to installer menu");	
+		DRAW_LINE(homebutton, "home", "return to main menu");	
+		DRAW_LINE(seltgz, "select tarchive", "browse to the tarchive you want to install");
+		DRAW_LINE(sellv, "select volume", "select the volume to install to (you can create one\n"
+						" from utilities)");
+		DRAW_TOGL(wipe, "wipe", "ON if you want to wipe before installing (should usually say YES)");
+		DRAW_LINE(doit, "install now", "install the tarchive now");
+
+		ts_read(&ts_x, &ts_y);
+
+		if PRESSED(backbutton) ret = 1;
+		else if PRESSED(homebutton) ret = 2;
+		else if PRESSED(seltgz) filename = select_file(EXT, ".gz");
+		else if PRESSED(sellv) lv = select_lv(0);
+		else if (PRESSED(doit) && (filename != NULL))
+			install_native(filename, lv, -1);
+
+		DO_TOGL(wipe);
+	}
+	return (ret & 2);
+}
+
+int tar_menu(void) {
+	char *filename = NULL;
+	char *lv = NULL;
+	int ret = 0;
+	int ts_x, ts_y;
+
+	DECL_LINE(backbutton);
+	DECL_LINE(homebutton);
+	DECL_LINE(seltar);
+	DECL_LINE(sellv);
+	DECL_LINE(doit);
+
+	while (!ret) {
+		clear_screen();
+
+		strcpy(sbstr, "install .tar");
+
+		START_LIST(16, 48, 352, 0xFF00C000, 0xFF00FF00, 0xFF80FF80);		
+
+		DRAW_LINE(backbutton, "back", "return to installer menu");	
+		DRAW_LINE(homebutton, "home", "return to main menu");	
+		DRAW_LINE(seltar, "select tarchive", "browse to the kexec tarchive you want to install");
+		DRAW_LINE(sellv, "select volume", "select the volume to install to");
+		DRAW_LINE(doit, "install now", "install the kexec tarchive now");
+
+		ts_read(&ts_x, &ts_y);
+
+		if PRESSED(backbutton) ret = 1;
+		else if PRESSED(homebutton) ret = 2;
+		else if PRESSED(seltar) filename = select_file(EXT, ".tar");
+		else if PRESSED(sellv) lv = select_lv(0);
+		else if (PRESSED(doit) && (filename != NULL))
+			install_tar(filename, lv);
+	}
+	return (ret & 2);
 }
 
 void util_menu(void) {
 	int ts_x, ts_y;
-	int ret = 0, code;
-	long sys, dat, cac;
-	char *bname, *lv, *lv_set, *cmd;
-	char pwd[PATH_MAX];
+	int ret = 0;
+	char *file = NULL;
 
+	DECL_LINE(backbutton);
+	DECL_LINE(lvbutton);
+	DECL_LINE(lvsetbutton);
+	DECL_LINE(miscbutton);
+	DECL_LINE(filebutton);
+	
 	while (!ret) {
-		clear_screen();
-		text("utility menu", 8, 8, 6, 6, 0xFF808080, 0xFF000000);
+		strcpy(sbstr, "utilities");
 
-		text_box("back", 16,128, 124,70, 3, 0xFFFFFFFF,0xFF606060,0xFFFFFFFF);
-		text_box("delete volume", 16,214, 250,52, 2,
-			0xFFFFFFFF,0xFFFF0000,0xFFFFFFFF);
-		text_box("delete volume set", 282,214, 322,52, 2,
-			0xFFFFFFFF,0xFFFF0000,0xFFFFFFFF);
-		text_box("reclaim media space", 620,214, 358,52, 2,
-			0xFFFFFFFF,0xFF00C000,0xFFFFFFFF);
-		text_box("rescan boot items", 16,282, 322,52, 2,
-			0xFFFFFFFF,0xFF0000FF,0xFFFFFFFF);
-		text_box("mount volume", 354,282, 232,52, 2,
-			0xFFFFFFFF,0xFF606060,0xFFFFFFFF);
-		text_box("mount volume set", 602,282, 304,52, 2,
-			0xFFFFFFFF,0xFF606060,0xFFFFFFFF);
-		text_box("format volume", 16,350, 250,52, 2,
-			0xFFFFFFFF,0xFFFF0000,0xFFFFFFFF);
-		text_box("format volume set", 282,350, 322,52, 2,
-			0xFFFFFFFF,0xFFFF0000,0xFFFFFFFF);
-		text_box("unmount volume", 620,350, 268,52, 2,
-			0xFFFFFFFF,0xFF808080,0xFFFFFFFF);
-		text_box("create volume tarchive", 16,418, 412,52, 2,
-			0xFFFFFFFF,0xFF0000FF,0xFFFFFFFF);
-		text_box("run shell command", 444,418, 322,52, 2,
-			0xFF00FF00,0xFF000000,0xFFC0C0C0);
-		text_box("create volume set", 16,486, 322,52, 2,
-			0xFF000000,0xFFFFFFFF,0xFF000000);
-		text_box("create volume", 354,486, 250,52, 2,
-			0xFF000000,0xFFFFFFFF,0xFF000000);
-		text_box("check volume", 620,486, 232,52, 2,
-			0xFFFFFFFF,0xFF00C000,0xFFFFFFFF);
-		text_box("resize volume", 16,558, 250,52, 2,
-			0xFFFFFFFF,0xFF0000C0,0xFFFFFFFF);
-		text_box("display log", 282,558, 214,52, 2,
-			0xFFFFFFFF,0xFF000000,0xFFFFFFFF);
-		text_box("dump log to file", 512,558, 304,52, 2,
-			0xFFFFFFFF,0xFF000000,0xFFFFFFFF);
-		text_box("set brightness", 16,626, 268,52, 2,
-			0x00000000,0xFFFFFFFF,0x00000000);
-		text_box("start adbd", 300,626, 196,52, 2,
-			0x00000000,0xFFFFFFFF,0x00000000);
+		clear_screen();
+		START_LIST(16, 48, 384, 0xFFC00000, 0xFFFF0000, 0xFFFF8080);
+
+		DRAW_LINE(backbutton, "back", "return to main menu");	
+		DRAW_LINE(lvbutton, "manage volumes", "create, delete, wipe, check, back up,\n"
+											"mount or resize volumes");
+		DRAW_LINE(lvsetbutton, "manage volume sets", "create, delete, wipe, check, back up,\n"
+													"mount or resize volume sets");
+		DRAW_LINE(miscbutton, "misc. options", "display or save log, set display brightness,\n"
+												"or run a shell command\n");
+		DRAW_LINE(filebutton, "files", "enter the file browser");
 
 		ts_read(&ts_x, &ts_y);
 
-		if (in_box(16, 128, 124, 70)) ret = 1;
-		else if (in_box(16, 214, 250, 52)) {
+		if (PRESSED(backbutton)) ret = 1;
+		else if (PRESSED(lvbutton)) ret = lv_menu();
+		else if (PRESSED(lvsetbutton)) ret = lv_set_menu();
+		else if (PRESSED(miscbutton)) ret = misc_menu();
+ 		else if PRESSED(filebutton) {
+			file = select_file(ANY, NULL);
+			if (file == NULL) continue;
+			task_menu(file);
+		}	
+	}
+}
+
+int lv_menu(void) {
+	int ts_x, ts_y;
+	int ret = 0;
+	long size;
+	char *lv, *name, str[256];
+
+	DECL_LINE(backbutton);
+	DECL_LINE(homebutton);
+	DECL_LINE(createbutton);
+	DECL_LINE(deletebutton);
+	DECL_LINE(fmtbutton);
+	DECL_LINE(chkbutton);
+	DECL_LINE(backupbutton);
+	DECL_LINE(restorebutton);
+	DECL_LINE(mntbutton);
+	DECL_LINE(umntbutton);
+	DECL_LINE(resizebutton);
+
+	while (!ret) {
+		strcpy(sbstr, "lv manager");
+
+		clear_screen();
+		START_LIST(16, 48, 352, 0xFFC00000, 0xFFFF0000, 0xFFFF8080);
+		
+		DRAW_LINE(backbutton, "back", "return to utility menu");	
+		DRAW_LINE(homebutton, "home", "return to main menu");	
+		DRAW_LINE(createbutton, "create volume", "create a logical volume (you need free space first)");
+		DRAW_LINE(deletebutton, "delete volume", "delete a logical volume, this will render all data\n"
+												"on it inaccessible and free space for new volumes");
+		DRAW_LINE(fmtbutton, "format volume", "format a logical volume");
+		DRAW_LINE(chkbutton, "check volume", "check the filesystem of a logical volume for errors\n"
+												"(please note that nsboot might reboot after this)");
+		DRAW_LINE(backupbutton, "back up volume", "create a .tar.gz file (tarchive) which is a replica\n"
+												 " of the contents of a volume, you can restore it later");
+		DRAW_LINE(restorebutton, "restore volume", "restore a previously-created volume backup tarchive");
+		DRAW_LINE(mntbutton, "mount volume", "mount a volume so you can use it in the file browser\n");
+		DRAW_LINE(umntbutton, "unmount volume", "unmount a volume so you can format/resize/delete/check it");
+		DRAW_LINE(resizebutton, "resize volume", "resize the a volume (along with its filesystem)");
+
+		ts_read(&ts_x, &ts_y);
+
+		if PRESSED(backbutton) ret = 1;
+		else if PRESSED(homebutton) ret = 2;
+		else if (PRESSED(createbutton)) {
+			lv = text_input("enter volume name - example: arch-root");
+			if ((lv == NULL) || (lv[0] == '\0')) continue;
+			size = size_screen("enter size of  new volume", 8, 65536);
+			if (confirm("create volume")) new_lv(lv, size);
+			free(lv);		
+		} else if (PRESSED(deletebutton)) {
 			lv = select_lv(1);
 			if (lv == NULL) continue;
 			if (confirm("delete volume")) delete_lv(lv);
-		} else if (in_box(282, 214, 322, 52)) {
-			lv_set = select_lv_set();
-			if (lv_set == NULL) continue;
-			if (confirm("delete volume set")) delete_lv_set(lv_set);
-		} else if (in_box(620, 214, 358, 52)) {
-			if (confirm("reclaim media space")) resize_lv("media", RS_RECLAIM, 0);
-		} else if (in_box(16, 282, 322, 52)) {
-			free_boot_items();
-			scan_boot_lvs();
-		} else if (in_box(354, 282, 232, 52)) {
-			lv = select_lv(0);
-			if (lv == NULL) continue;
-			mount_lv(lv);
-		} else if (in_box(602, 282, 304, 52)) {
-			lv_set = select_lv_set();
-			if (lv_set == NULL) continue;
-			mount_lv_set(lv_set);
-		} else if (in_box(16, 350, 250, 52)) {
+		} else if (PRESSED(fmtbutton)) {
 			lv = select_lv(1);
 			if (lv == NULL) continue;
 			if (confirm("format volume")) wipe_lv(lv);
-		} else if (in_box(282, 350, 322, 52)) {
-			lv_set = select_lv_set();
-			if (lv_set == NULL) continue;
-			if (confirm("format volume set")) wipe_lv_set(lv_set);
-		} else if (in_box(620, 350, 268, 52)) {
+		} else if (PRESSED(	chkbutton)) {
+			lv = select_lv(0);
+			if (lv == NULL) continue;
+			if (confirm("check volume - system may reboot on its own")) check_lv(lv);
+		} else if (PRESSED(backupbutton)) {
+			lv = select_lv(0);
+			if (lv == NULL) continue;
+			name = text_input("Enter the name for your backup:");
+			if ((name == NULL) || (name[0] == '\0')) continue;
+			if (confirm("backing up takes > 5 min")) lv_to_tgz(lv, name);
+			free(name);
+		} else if (PRESSED(restorebutton)) tgz_menu();
+		else if (PRESSED(mntbutton)) {
+			lv = select_lv(0);
+			if (lv == NULL) continue;
+			mount_lv(lv);
+		} else if (PRESSED(umntbutton)) {
 			lv = select_lv(0);
 			if (lv == NULL) continue;
 			umount_lv(lv);
-		} else if (in_box(16, 418, 415, 52)) {
+		} else if (PRESSED(resizebutton)) {
 			lv = select_lv(0);
 			if (lv == NULL) continue;
-			bname = text_input("Enter the name for your backup:");
-			if ((bname == NULL) || (bname[0] == '\0')) continue;
-			if (confirm("backing up takes > 5 min")) lv_to_tgz(lv, bname);
-			free(bname);
-		} else if (in_box(444, 418, 322, 52)) {
+			snprintf(str, sizeof(str), "volume %s current size %ld MiB", lv, get_lv_size(lv));
+			size = size_screen(str, 8, 65536);
+			if (confirm("resize volume, preserving data")) resize_lv(lv, RS_SET, size);
+		}
+	}
+	return (ret & 2);
+}
+
+int lv_set_menu(void) {
+	int ts_x, ts_y;
+	int ret = 0;
+	long sys, dat, cac;
+	char *lv_set;
+	char *bname;
+
+	DECL_LINE(backbutton);
+	DECL_LINE(homebutton);
+	DECL_LINE(createbutton);
+	DECL_LINE(deletebutton);
+	DECL_LINE(fmtbutton);
+	DECL_LINE(mntbutton);
+	DECL_LINE(resizebutton);
+
+	while (!ret) {
+		strcpy(sbstr, "lv manager");
+
+		clear_screen();
+		START_LIST(16, 48, 400, 0xFFC00000, 0xFFFF0000, 0xFFFF8080);
+		
+		DRAW_LINE(backbutton, "back", "return to utility menu");	
+		DRAW_LINE(homebutton, "home", "return to main menu");	
+		DRAW_LINE(createbutton, "create volume", "create a volume set (you need free space first)");
+		DRAW_LINE(deletebutton, "delete volume", "delete a volume set, this will render all data\n"
+											"on it inaccessible and free space for new volumes");	
+		DRAW_LINE(fmtbutton, "format volume", "format a volume set");
+		DRAW_LINE(mntbutton, "mount volume", "mount a volume set so you can use it in the file browser\n");
+		DRAW_LINE(resizebutton, "resize volume", "resize the a volume set (along with its filesystems)");
+
+		ts_read(&ts_x, &ts_y);
+
+		if PRESSED(backbutton) ret = 1;
+		else if PRESSED(homebutton) ret = 2;
+		else if (PRESSED(createbutton)) {
+			lv_set = text_input("enter volume set name - example: android42");
+			if ((lv_set == NULL) || (lv_set[0] == '\0')) continue;
+			sys = size_screen("for system volume", 240, 640);
+			dat = size_screen("for data volume", 200, 2048);
+			cac = size_screen("for cache volume", 160, 256);
+			if (confirm("create volume set")) new_lv_set(lv_set, sys, dat, cac);
+			free(lv_set);
+		} else if (PRESSED(deletebutton)) {
+			lv_set = select_lv_set();
+			if (lv_set == NULL) continue;
+			if (confirm("delete volume set")) delete_lv_set(lv_set);
+		} else if (PRESSED(fmtbutton)) {
+			lv_set = select_lv_set();
+			if (lv_set == NULL) continue;
+			if (confirm("format volume set")) wipe_lv_set(lv_set);
+		} else if (PRESSED(mntbutton)) {
+			lv_set = select_lv_set();
+			if (lv_set == NULL) continue;
+			mount_lv_set(lv_set);
+		}
+	}
+	return (ret & 2);
+}
+
+int misc_menu(void) {
+	int ts_x, ts_y;
+	int ret = 0, code, bright;
+	char *cmd, *name;
+	char pwd[PATH_MAX];
+
+	DECL_LINE(backbutton);
+	DECL_LINE(homebutton);
+	DECL_LINE(shellcmd);
+	DECL_LINE(displog);
+	DECL_LINE(dumplog);
+	DECL_LINE(setbright);
+
+	while (!ret) {
+		strcpy(sbstr, "misc.");
+
+		clear_screen();
+		START_LIST(16, 48, 352, 0xFFC00000, 0xFFFF0000, 0xFFFF8080);
+		
+		DRAW_LINE(backbutton, "back", "return to utility menu");	
+		DRAW_LINE(homebutton, "home", "return to main menu");	
+		DRAW_LINE(shellcmd, "shell command", "run a command inside nsboot's bash shell");
+		DRAW_LINE(displog, "display log", "display the nsboot log");
+		DRAW_LINE(dumplog, "save log", "save the nsboot log to a file under /mnt/media/nsboot/logs/");
+		DRAW_LINE(setbright, "brightness", "set the brightness of the LCD");
+
+		ts_read(&ts_x, &ts_y);
+
+		if (PRESSED(backbutton)) ret = 1;
+		else if (PRESSED(homebutton)) ret = 2;
+		else if (PRESSED(shellcmd)) {
 			if (getcwd(pwd, PATH_MAX) == NULL) {
 				logperror("can't getcwd");
 				continue;
@@ -308,84 +490,20 @@ void util_menu(void) {
 			if (code = WEXITSTATUS(system(cmd)))
 				logprintf("2your shell command exited with code %d", code);
 			free(cmd);
-		} else if (in_box(16, 486, 322, 52)) {
-			lv_set = text_input("enter volume set name - example: android42");
-			if ((lv_set == NULL) || (lv_set[0] == '\0')) continue;
-			sys = size_screen("for system volume", 240, 640);
-			dat = size_screen("for data volume", 200, 2048);
-			cac = size_screen("for cache volume", 160, 256);
-			if (confirm("create volume set")) new_lv_set(lv_set, sys, dat, cac);
-			free(lv_set);
-		} else if (in_box(354, 486, 250, 52)) {
-			lv = text_input("enter volume name - example: arch-root");
-			if ((lv == NULL) || (lv[0] == '\0')) continue;
-			sys = size_screen("for new volume", 8, 65536);
-			if (confirm("create volume")) new_lv(lv, sys);
-			free(lv);
-		} else if (in_box(620, 486, 232, 52)) {
-			lv = select_lv(0);
-			if (lv == NULL) continue;
-			if (confirm("check volume - system may reboot on its own")) check_lv(lv);
-		} else if (in_box(16, 558, 250, 52)) {
-			lv = select_lv(0);
-			if (lv == NULL) continue;
-			snprintf(pwd, sizeof(pwd), "volume %s current size %ld MiB", lv, get_lv_size(lv));
-			sys = size_screen(pwd, 8, 65536);
-			if (confirm("resize volume, preserving data")) resize_lv(lv, RS_SET, sys);
-		} else if (in_box(282, 558, 214, 52))
-			display_wholelog();
-		else if (in_box(512, 558, 304, 52)) {
-			bname = text_input("please enter log name:");
-			if ((bname == NULL) || (bname[0] == '\0')) continue;
+		} else if (PRESSED(displog)) display_wholelog();
+		else if (PRESSED(dumplog)) {
+			name = text_input("please enter log name:");
+			if ((name == NULL) || (name[0] == '\0')) continue;
 			mount_lv("media");
 			mkdir("/mnt/media/nsboot/logs/", 0755);
-			snprintf(pwd, sizeof(pwd), "/mnt/media/nsboot/logs/%s.log", bname);
-			dump_log_to_file(pwd);
-		} else if (in_box(16, 626, 268, 52)) {
-			sys = size_screen("set LCD brightness (4-255)", 4, 255);
-			set_brightness(sys);
-		} else if (in_box(300, 626, 196, 52))
-			start_adbd();
+			snprintf(pwd, sizeof(pwd), "/mnt/media/nsboot/logs/%s.log", name);
+			dump_log_to_file(pwd);	
+		} else if (PRESSED(setbright)) {
+			bright = size_screen("set LCD brightness (4-255)", 4, 255);
+			set_brightness(bright);
+		}
 	}
-}
-
-int android_options(void) {
-	int ret = 0, done = 0;
-	int ts_x, ts_y;
-
-	while (!done) {
-		clear_screen();
-		text("install options", 16, 16, 4, 4, 0xFFFFFFFF, 0x00000000);
-		text_box("accept", 16,104, 178,70, 3, 0xFFFFFFFF,0xFF808080,0xFFFFFFFF);
-		text_box("wipe system", 16,208, 412,88, 4,
-			(ret & WIPE_SYSTEM) ? 0xFFFFFFFF : 0x00000000,
-			(ret & WIPE_SYSTEM) ? 0x00000000 : 0xFFFFFFFF,
-			(ret & WIPE_SYSTEM) ? 0xFFFFFFFF : 0x00000000);
-
-		text_box("wipe data", 16,312, 340,88, 4,
-			(ret & WIPE_DATA) ? 0xFFFFFFFF : 0x00000000,
-			(ret & WIPE_DATA) ? 0x00000000 : 0xFFFFFFFF,
-			(ret & WIPE_DATA) ? 0xFFFFFFFF : 0x00000000);
-
-		text_box("wipe cache", 16,424, 376,88, 4,
-			(ret & WIPE_CACHE) ? 0xFFFFFFFF : 0x00000000,
-			(ret & WIPE_CACHE) ? 0x00000000 : 0xFFFFFFFF,
-			(ret & WIPE_CACHE) ? 0xFFFFFFFF : 0x00000000);
-
-		text_box("install to moboot", 16,536, 628,88, 4,
-			(ret & INST_MOBOOT) ? 0xFFFFFFFF : 0x00000000,
-			(ret & INST_MOBOOT) ? 0x00000000 : 0xFFFFFFFF,
-			(ret & INST_MOBOOT) ? 0xFFFFFFFF : 0x00000000);
-
-		ts_read(&ts_x, &ts_y);
-
-		if (in_box(16, 208, 412, 88)) ret ^= WIPE_SYSTEM;
-		else if (in_box(16, 312, 340, 88)) ret ^= WIPE_DATA;
-		else if (in_box(16, 424, 376, 88)) ret ^= WIPE_CACHE;
-		else if (in_box(16, 328, 628, 88)) ret ^= INST_MOBOOT;
-		else if (in_box(16, 104, 178, 70)) done = 1;
-	}
-	return ret;
+	return (ret & 2);
 }
 
 void info_screen(void) {

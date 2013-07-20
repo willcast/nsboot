@@ -22,6 +22,7 @@
 
 void qfprintf(const char *, const char *, ...);
 void qfscanf(const char *, const char *, ...);
+void qpscanf(const char *, const char *, ...);
 int hexval(char);
 
 #endif

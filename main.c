@@ -37,10 +37,14 @@
 #include "boot.h"
 #include "lv.h"
 #include "log.h"
+
 #include "init.h"
 
 int main(int argc, char **argv) {
+	strcpy(sbstr, "loading...");
+
 	do_init();
+
 	main_menu();
 
 	exit(0);

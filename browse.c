@@ -32,10 +32,12 @@
 #include "boot.h"
 #include "fb.h"
 #include "log.h"
+#include "lib.h"
 
 struct dir_list *current = NULL;
 struct dir_list *lvs = NULL;
 struct str_list *lv_sets = NULL;
+long lv_sizes[LV_MAX];
 
 // protected from access so that people can't
 // inadvertently kill bootie or webOS
@@ -89,8 +91,9 @@ void update_dir_list(void) {
 }
 
 void update_lv_lists(void) {
-	char name[32], *dash;
+	char name[32], *dash, cmd[PATH_MAX];
 	int add;
+	long long size;
 
 	if (lvs != NULL) free_dir_list(lvs);
 	if (lv_sets != NULL) free_str_list(lv_sets);
@@ -105,15 +108,19 @@ void update_lv_lists(void) {
 
 	for (int i = 0; i < lvs->n; ++i) {
 		strncpy(name, lvs->dents[i]->d_name, 32);
+
+		sprintf(cmd, "blockdev --getsize64 '/dev/store/%s'", name);
+		qpscanf(cmd, "%lld", &size);
+		lv_sizes[i] = size / 1048576;
+
 		if (is_android(name)) {
 			dash = strchr(name, '-');
 			*dash = '\0';
 			add = 1;
 			for (int j = 0; j < lv_sets->used; ++j)
-				if (!strcmp(name, lv_sets->data[j]))
+				if (!strcmp(name, lv_sets->data[j])) 
 					add = 0;
 			if (add) append_to_str_list(lv_sets, name);
-
 		}
 	}
 }
