@@ -86,8 +86,9 @@ char * select_file(enum filter_spec filtloc, char *filter) {
 	while (selected_file[0] == '\0') {
 		char *pwd = NULL;
 		int n;
-		int *by, *keep;
-		int reali = 0;
+		int *by, *kept;
+		int j, nkept;
+		int match, keep;
 		uint16_t mode;
 
 		sel = -1;
@@ -98,7 +99,7 @@ char * select_file(enum filter_spec filtloc, char *filter) {
 		update_dir_list();
 		n = file_count();
 		by = malloc(n * sizeof(int));
-		keep = malloc(n * sizeof(int));
+		kept = malloc(n * sizeof(int));
 		npages = 1 + n / perpage;
 
 		pwd = getcwd(pwd, PATH_MAX);
@@ -109,40 +110,44 @@ char * select_file(enum filter_spec filtloc, char *filter) {
 			DRAW_LINE(prevpage, "previous page", "not all files are shown"); 
 		}
 
-		for (int i = perpage * (pagenum - 1); i < n; ++i) {
-			if (i > pagenum * perpage) break;
-
+		j = 0;
+		for (int i = 0; i < n; ++i) {
 			switch (filtloc) {
 			case ANY:
-				keep[i] = 1;
+				match = 1;
 				break;
 			case BASE:
-				keep[i] = !cmp_base(file_name(i), filter);
+				match = !cmp_base(file_name(i), filter);
 				break;
 			case EXT:
-				keep[i] = !cmp_ext(file_name(i), filter);
+				match = !cmp_ext(file_name(i), filter);
 				break;
 			case NAME:
-				keep[i] = !strcasecmp(file_name(i), filter);
+				match = !strcasecmp(file_name(i), filter);
 				break;
 			default:
-				keep[i] = 0;
+				match = 0;
 			}
 
-			if (file_is_dir(i)) keep[i] = 1; // always keep directories
-			if (!keep[i]) break;
+			if (file_is_dir(i) || match) {
+				kept[j] = i; 
+				++j;
+			}
+		}
+		nkept = j;
 
-			snprintf(str, sizeof(str), "permissions = %o", file_mode(i) & 07777);
+		for (int i = perpage * (pagenum - 1); i < nkept; ++i) {
+			if (i > pagenum * perpage) break;
+
+			snprintf(str, sizeof(str), "permissions = %o", file_mode(kept[i]) & 07777);
 
 			USECOLR = !USECOLR; 
 			CURCOLR = USECOLR ? BG1COLR : BG2COLR; 
 			current_y += 48; 
-			by[reali] =  current_y; 
-			fill_rect(0, by[reali], 1024, 44, CURCOLR);
-			text(file_name(i), col1_x, by[reali] + 8, 1, 1, 0xFFFFFFFF, CURCOLR);
-			text(str, col2_x, by[reali] + 8, 1, 1, 0xFFFFFFFF, CURCOLR);
-	
-			++reali;
+			by[i] =  current_y; 
+			fill_rect(0, by[i], 1024, 44, CURCOLR);
+			text(file_name(kept[i]), col1_x, by[i] + 8, 1, 1, 0xFFFFFFFF, CURCOLR);
+			text(str, col2_x, by[i] + 8, 1, 1, 0xFFFFFFFF, CURCOLR);
 		}
 		if (pagenum < npages) {
 			DRAW_LINE(nextpage, "next page", "not all files are shown");
@@ -152,12 +157,12 @@ char * select_file(enum filter_spec filtloc, char *filter) {
 			ts_read(&ts_x, &ts_y);
 			if (PRESSED(backbtn)) {
 				free(by);
-				free(keep);
+				free(kept);
 				return NULL;
 			}
-			for (int i = 0; i <= reali; ++i)
+			for (int i = perpage * (pagenum - 1); i <= nkept; ++i)
 				if (in_box(0, by[i], 1024, 44))
-					sel = i;
+					sel = kept[i];
 			if (PRESSED(prevpage)) {
 				--pagenum;
 				break;
@@ -169,7 +174,7 @@ char * select_file(enum filter_spec filtloc, char *filter) {
 
 		if (sel != -1) {
 			free(by);
-			free(keep);
+			free(kept);
 			pagenum = 1;
 	
 			if (file_is_dir(sel)) {
