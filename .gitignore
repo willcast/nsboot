@@ -1,8 +1,7 @@
-.rd
-.rd.lzma
-.urd
+*.o
 nsboot
-nsboot-test
-uImage
-uImage-test
-logs/
+uImage.nsboot
+uKernel
+uRamdisk
+nsboot_ramdisk.img
+

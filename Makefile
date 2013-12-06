@@ -1,62 +1,53 @@
-# makefile for nsboot
+# makefile 2.0 for nsboot
 
-nsboot: *.[ch]
-	gcc -D_GNU_SOURCE -std=gnu99 -static -Os -o nsboot *.c
-	strip nsboot
+CC := gcc
+CFLAGS := -D_GNU_SOURCE -std=gnu99 -Os -Wall
+LDFLAGS := -static
+SOURCES := boot.c browse.c fb.c init.c input.c install.c lib.c log.c lv.c \
+	lvset.c main.c screens.c touch.c types.c
+HEADERS := boot.h browse.h fb.h init.h input.h install.h lib.h log.h lv.h \
+	lvset.h screens.h touch.h types.h
+OBJECTS := $(SOURCES:.c=.o)
+EXECUTABLE := nsboot
+UIMAGE := uImage.nsboot
+UKERNEL := uKernel
+KERNEL := zImage
+URAMDISK := uRamdisk
+RAMDISK := nsboot_ramdisk.img
 
-nsboot-test: *.[ch]
-	gcc -D_GNU_SOURCE -std=gnu99 -static -ggdb -o nsboot-test *.c
+empty :=
+space := $(empty) $(empty) 
+
+all: $(UIMAGE) $(UKERNEL) $(URAMDISK) $(RAMDISK) $(KERNEL) $(EXECUTABLE) $(OBJECTS) $(HEADERS)
+
+$(UIMAGE): $(UKERNEL) $(URAMDISK)
+	mkimage -A arm -O linux -T multi -C none -a 0x40208000 -e 0x40208000 \
+	-n nsboot_multi -d $(UKERNEL):$(URAMDISK) $@
+
+$(URAMDISK): $(RAMDISK)
+	mkimage -A arm -O linux -T ramdisk -C none -a 0x60000000 -e 0x60000000 \
+	-n nsboot_ramdisk -d $< $@
+
+$(UKERNEL): $(KERNEL)
+	mkimage -A arm -O linux -T kernel -C none -a 0x40208000 -e 0x40208000 \
+	-n nsboot_kernel -d $< $@
+
+$(RAMDISK): $(EXECUTABLE)
+	cp $(EXECUTABLE) root/bin
+	cp t.fnt root/
+	(cd root && find . | cpio -o --format=newc > ../ramdisk.cpio)
+	lzma -c ramdisk.cpio > $@
+
+$(EXECUTABLE): $(OBJECTS)
+	$(CC) $(LDFLAGS) $(OBJECTS) -o $@
+
+%.o: %.c $(HEADERS)
+	$(CC) -c $(CFLAGS) $< -o $@
+
+.PHONY: clean boot
 
 clean: 
-	rm -f nsboot .rd .urd uImage
+	rm -f $(IMAGE) $(UKERNEL) $(URAMDISK) $(RAMDISK) $(EXECUTABLE) $(OBJECTS)
 
-uImage: nsboot uKernel
-	rm -f .rd.lzma
-	cp nsboot root/bin
-	cp t.fnt root
-	(cd root && find . | cpio -o --format=newc > ../.rd)
-	lzma .rd
-	mkimage -A arm -O linux -T ramdisk -C none -a 0x60000000 -e 0x60000000 \
-		-n nsboot-ramdisk -d .rd.lzma .urd
-	mkimage -A arm -O linux -T multi -C none -a 0x40208000 -e 0x40208000 \
-		-n nsboot-multi -d uKernel:.urd uImage
-
-uImage-test: nsboot-test uKernel-test
-	rm -f .rd.lzma
-	cp nsboot-test root/bin/nsboot
-	cp t.fnt root
-	(cd root && find . | cpio -o --format=newc > ../.rd)
-	lzma .rd
-	mkimage -A arm -O linux -T ramdisk -C none -a 0x60000000 -e 0x60000000 \
-		-n nsboot-ramdisk -d .rd.lzma .urd
-	mkimage -A arm -O linux -T multi -C none -a 0x40208000 -e 0x40208000 \
-		-n nsboot-multi -d uKernel-test:.urd uImage-test
-
-boot: uImage-test
-	novacom boot mem:// < uImage-test
-
-scp: uImage
-	ssh root@hptp1 mount -o remount,rw /boot/moboot
-	scp uImage root@hptp1:/boot/moboot/uImage.nsboot
-	ssh root@hptp1 reboot
-
-push-linux: uImage
-	adb shell mount -o remount,rw /boot
-	adb push uImage /boot/uImage.nsboot
-	adb shell reboot
-
-push-android: uImage
-	adb shell mkdir /boot
-	adb shell mount /dev/mmcblk0p13 /boot
-	adb push uImage /boot/uImage.nsboot
-	adb reboot
-
-push-nsboot: uImage
-	adb push uImage /mnt/boot/uImage.nsboot
-
-pull_logs:
-	mkdir -p logs
-	adb shell mkdir /mnt/media
-	adb shell mount /dev/store/media /mnt/media
-	adb pull /mnt/media/nsboot/logs logs/
-
+boot: $(UIMAGE)
+	novacom boot mem:// < $(UIMAGE)
