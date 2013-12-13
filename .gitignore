@@ -3,5 +3,6 @@ nsboot
 uImage.nsboot
 uKernel
 uRamdisk
+ramdisk.cpio
 nsboot_ramdisk.img
 
