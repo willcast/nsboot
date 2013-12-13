@@ -95,6 +95,8 @@ void display_wholelog(void) {
 			text(str, 0, i*16, 1, 1, 0xFFFFFFFF, logpalette[loglevel]);
 		}
 		start += FBHEIGHT / 16;
+
+		update_screen();
 		wait_touch();
 	} else for (int i = 0; i < loglist->used; ++i)
 		fprintf(stderr, "%s\n", loglist->data[i]+1);

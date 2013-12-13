@@ -41,9 +41,8 @@ char sbstr[32];
 int stat_page = 0;
 long screen_size = 0;
 
-// yes, this is probably a boat load of RAM gone
-// target has 1GiB, so oh well.
 uint8_t font[7][48][96][256];
+uint32_t *double_buf;
 
 int is_fb_available(void) {
 	return !(fbp == NULL);
@@ -76,6 +75,13 @@ int fb_init(void) {
 		close(fb_fd);
 		return 1;
 	}
+
+	double_buf = malloc(screen_size);
+	if (double_buf == NULL) {
+		perror("failed to allocate double buffer");
+		return 1;
+	}
+
 	ditch_stdouterr();
 
 	return 0;
@@ -83,17 +89,24 @@ int fb_init(void) {
 
 void fb_close(void) {
 	clear_screen();
+	free(double_buf);
 	munmap(fbp, screen_size);
 	close(fb_fd);
 	fbp = NULL;
 	reclaim_stdouterr();
 }
 
+void update_screen(void) {
+	for (int y = 0; y < FBHEIGHT; ++y) for (int x = 0; x < FBWIDTH; ++x) {
+		uint32_t *pp = (uint32_t *)(fbp + (x + vinfo.xoffset) *
+			(vinfo.bits_per_pixel >> 3) +
+			(y + vinfo.yoffset) * finfo.line_length);
+		*pp = double_buf[x + y * vinfo.xres];
+	}
+}
+
 void put_pixel(int x, int y, uint32_t color) {
-	uint32_t *pp = (uint32_t *)(fbp + (x + vinfo.xoffset) *
-		(vinfo.bits_per_pixel >> 3) +
-		(y + vinfo.yoffset) * finfo.line_length);
-	*pp = color;
+	double_buf[x + y * vinfo.xres] = color;
 }
 
 void hline(int x, int y, int w, uint32_t color) {

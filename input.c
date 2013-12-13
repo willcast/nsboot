@@ -154,7 +154,9 @@ char * select_file(enum filter_spec filtloc, char *filter) {
 		}
 
 		while (sel == -1) {
+			update_screen();
 			ts_read(&ts_x, &ts_y);
+
 			if (PRESSED(backbtn)) {
 				free(by);
 				free(kept);
@@ -236,6 +238,7 @@ char * select_lv(int disable_android) {
 			DRAW_LINE(nextpage, "next page", "not all volumes are shown");
 		}
 
+		update_screen();
 		ts_read(&ts_x, &ts_y);
 		if (PRESSED(backbtn)) ret = 2;
 
@@ -293,6 +296,7 @@ char * select_lv_set(void) {
 			DRAW_LINE(nextpage, "next page", "not all volume sets are shown");
 		}
 
+		update_screen();
 		ts_read(&ts_x, &ts_y);
 		if (PRESSED(backbtn)) ret = 2;
 
@@ -337,7 +341,9 @@ int confirm(const char *label) {
 	DRAW_LINE(nobtn, "no", "cancel the action and return to the previous screen");
 
 	while (ret == -1) {
+		update_screen();
 		ts_read(&ts_x, &ts_y);
+
 		if (PRESSED(yesbtn)) ret = 1;
 		else if (PRESSED(nobtn)) ret = 0;
 	}
@@ -390,7 +396,9 @@ void boot_menu(void) {
 		}
 
 		while (ret == -1) {
+			update_screen();
 			ts_read(&ts_x, &ts_y);
+
 			if (PRESSED(backbtn)) ret = 1;
 
 			for (int i = 0; i < menu_size; ++i) {
@@ -457,6 +465,7 @@ long num_input(const char *prompt) {
 		text_box("enter", 296,612, 124,124, 1,
 			0xFFFFFFFF,0xFF000000,0xFFFFFFFF);
 
+		update_screen();
 		ts_read(&ts_x, &ts_y);
 
 		if (in_box(16, 174, 124, 124)) buf[cur_ch++] = '7';
@@ -523,6 +532,7 @@ char * text_input(const char *prompt) {
 		text_box("", 208,640, 448,52, 1,
 			0xFF000000,0xFFFFFFFF,0xFF000000);
 
+		update_screen();
 		ts_read(&ts_x, &ts_y);
 
 		for (int y = 0; y < 4; ++y) for (int x = 0; x < 14; ++x)

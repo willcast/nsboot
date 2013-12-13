@@ -64,6 +64,7 @@ void main_menu(void) {
 		DRAW_LINE(installbutton, "install", "enter the installer menu")
 		DRAW_LINE(utilitybutton, "utilities", "enter the utilities menu");
 
+		update_screen();
 		ts_read(&ts_x, &ts_y);
 
 		if PRESSED(offbutton) {
@@ -112,6 +113,7 @@ void installer_menu(void) {
 		DRAW_LINE(uimgbutton, "install uImage", "install a kernel for moboot");
 		DRAW_LINE(replacebutton, "make nsboot default", "make sure all your OSes work with it first");
 
+		update_screen();
 		ts_read(&ts_x, &ts_y);
 
 		if PRESSED(backbutton) ret = 1;
@@ -164,6 +166,7 @@ int zip_menu(void) {
 		DRAW_TOGL(wipecac, "wipe cache", "ON if you want to wipe /cache (should almost always say YES)");
 		DRAW_LINE(doit, "install now", "install the ZIP now");
 
+		update_screen();
 		ts_read(&ts_x, &ts_y);
 
 		if PRESSED(backbutton) ret = 1;
@@ -212,6 +215,7 @@ int tgz_menu(void) {
 		DRAW_TOGL(wipe, "wipe", "ON if you want to wipe before installing (should usually say YES)");
 		DRAW_LINE(doit, "install now", "install the tarchive now");
 
+		update_screen();
 		ts_read(&ts_x, &ts_y);
 
 		if PRESSED(backbutton) ret = 1;
@@ -251,6 +255,7 @@ int tar_menu(void) {
 		DRAW_LINE(sellv, "select volume", "select the volume to install to");
 		DRAW_LINE(doit, "install now", "install the kexec tarchive now");
 
+		update_screen();
 		ts_read(&ts_x, &ts_y);
 
 		if PRESSED(backbutton) ret = 1;
@@ -289,6 +294,7 @@ void util_menu(void) {
 												"or run a shell command\n");
 		DRAW_LINE(filebutton, "files", "enter the file browser");
 
+		update_screen();
 		ts_read(&ts_x, &ts_y);
 
 		if (PRESSED(backbutton)) ret = 1;
@@ -342,6 +348,7 @@ int lv_menu(void) {
 		DRAW_LINE(umntbutton, "unmount volume", "unmount a volume so you can format/resize/delete/check it");
 		DRAW_LINE(resizebutton, "resize volume", "resize the a volume (along with its filesystem)");
 
+		update_screen();
 		ts_read(&ts_x, &ts_y);
 
 		if PRESSED(backbutton) ret = 1;
@@ -421,6 +428,7 @@ int lv_set_menu(void) {
 		DRAW_LINE(mntbutton, "mount volume", "mount a volume set so you can use it in the file browser\n");
 		DRAW_LINE(resizebutton, "resize volume", "resize the a volume set (along with its filesystems)");
 
+		update_screen();
 		ts_read(&ts_x, &ts_y);
 
 		if PRESSED(backbutton) ret = 1;
@@ -476,6 +484,7 @@ int misc_menu(void) {
 		DRAW_LINE(dumplog, "save log", "save the nsboot log to a file under /mnt/media/nsboot/logs/");
 		DRAW_LINE(setbright, "brightness", "set the brightness of the LCD");
 
+		update_screen();
 		ts_read(&ts_x, &ts_y);
 
 		if (PRESSED(backbutton)) ret = 1;
@@ -547,6 +556,7 @@ void info_screen(void) {
 
 		text_box("back", 16,282, 160,70, 3, 0xFFFFFFFF,0xFF808080,0xFFFFFFFF);
 
+		update_screen();
 		ts_read(&ts_x, &ts_y);
 
 		if (in_box(16, 249, 160, 70)) ret = 1;
@@ -637,6 +647,7 @@ void task_menu(const char *file1) {
 			(mode & 04000) ? 0xFFFFFFFF : 0xFF000000,
 			(mode & 04000) ? 0xFF000000 : 0xFFFFFFFF);
 
+		update_screen(); 
 		ts_read(&ts_x, &ts_y);
 
 		if (in_box(16, 148, 232, 88)) done = 1;

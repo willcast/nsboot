@@ -36,6 +36,7 @@ void reclaim_stdouterr();
 
 // drawing functions
 void clear_screen(void);
+void update_screen(void);
 void put_pixel(int, int, uint32_t);
 void hline(int, int, int, uint32_t);
 void vline(int, int, int, uint32_t);
