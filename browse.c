@@ -20,22 +20,20 @@
 	along with nsboot.  If not, see <http://www.gnu.org/licenses/>
 */
 
-#include <dirent.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
 #include <ctype.h>
-#include <errno.h>
+#include <dirent.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+
+#include <linux/limits.h>
 
 #include "browse.h"
-#include "types.h"
-#include "boot.h"
-#include "fb.h"
-#include "log.h"
 #include "lib.h"
+#include "log.h"
+#include "lv.h"
+#include "types.h"
 
 struct dir_list *current = NULL;
 struct dir_list *lvs = NULL;

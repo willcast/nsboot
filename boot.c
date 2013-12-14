@@ -20,26 +20,22 @@
 	along with nsboot.  If not, see <http://www.gnu.org/licenses/>
 */
 
-#include <sys/stat.h>
-
-#include <sys/types.h>
 #include <fcntl.h>
-#include <unistd.h>
+#include <stdint.h>
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
 #include <linux/limits.h>
 
-#include "fb.h"
 #include "boot.h"
-#include "types.h"
-#include "install.h"
 #include "browse.h"
-#include "lv.h"
-#include "log.h"
 #include "init.h"
+#include "install.h"
 #include "lib.h"
-
+#include "log.h"
+#include "lv.h"
 
 const char *keepable_args[] = { "fbcon=e", "klog=", "klog_len=",
 	"nduid=", "boardtype=" , "fb=" };

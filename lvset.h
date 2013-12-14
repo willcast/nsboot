@@ -1,5 +1,5 @@
 /*
-	nsboot/lvset.c
+	nsboot/lvset.h
 	header for Logical Volume Set related functions
 
 	Copyright (C) 2013 Will Castro

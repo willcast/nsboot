@@ -20,25 +20,20 @@
 	along with nsboot.  If not, see <http://www.gnu.org/licenses/>
 */
 
-#include <sys/mount.h>
-#include <sys/stat.h>
-#include <sys/reboot.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <ctype.h>
-#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+
 #include <linux/limits.h>
 
-#include "fb.h"
+#include <sys/stat.h>
+
+#include "install.h"
+#include "lib.h"
 #include "log.h"
 #include "lv.h"
 #include "lvset.h"
-#include "install.h"
-#include "lib.h"
 
 const char *update_str = "cat META-INF/com/google/android/updater-script"
 "| grep -v '^\\(assert\\)\\|\\(package_extract_.*\\)\\|\\(^mount\\)\\|\\(format\\)\\|\\(run_program\\)\\|\\(^umount\\)\\|\\(^unmount\\)\\|\\(show_progress\\)\\|\\(ui_print\\)\\|\\(^delete\\)' "

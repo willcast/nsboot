@@ -20,23 +20,20 @@
 	along with nsboot.  If not, see <http://www.gnu.org/licenses/>
 */
 
-#include <sys/mount.h>
-#include <sys/stat.h>
-#include <sys/reboot.h>
-#include <sys/types.h>
-#include <sys/wait.h>
 #include <ctype.h>
-#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+
 #include <linux/limits.h>
 
-#include "fb.h"
-#include "lv.h"
+#include <sys/reboot.h>
+#include <sys/stat.h>
+
 #include "install.h"
-#include "log.h"
+#include "log.h"	
+#include "lv.h"
 
 void mount_lv(const char *lv) {
 	char cmd[PATH_MAX];

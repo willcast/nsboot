@@ -20,30 +20,23 @@
 	along with nsboot.  If not, see <http://www.gnu.org/licenses/>
 */
 
-#include <sys/signal.h>
-#include <sys/resource.h>
-#include <linux/limits.h>
-
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <stdint.h>
-#include <fcntl.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/ioctl.h>
-#include <sys/file.h>
-#include <sys/mount.h>
-#include <sys/time.h>
 
-#include "touch.h"
-#include "fb.h"
+#include <linux/limits.h>	
+
+#include <sys/mount.h>
+#include <sys/resource.h>
+#include <sys/stat.h>
+
 #include "boot.h"
+#include "fb.h"
 #include "init.h"
-#include "lv.h"
-#include "log.h"
 #include "lib.h"
+#include "log.h"
+#include "lv.h"
+#include "touch.h"
 
 void do_init(void) {
 	char ts_name[PATH_MAX];

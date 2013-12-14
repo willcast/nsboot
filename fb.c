@@ -20,21 +20,19 @@
 	along with nsboot.  If not, see <http://www.gnu.org/licenses/>
 */
 
-#include <sys/ioctl.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/mman.h>
-#include <linux/fb.h>
-#include <string.h>
 #include <fcntl.h>
 #include <stdio.h>
-#include <stdarg.h>
+#include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
-#include "touch.h"
+#include <linux/fb.h>
+
+#include <sys/mman.h>
+
 #include "fb.h"
-#include "log.h"
 #include "lib.h"
+#include "log.h"
 
 int fb_fd;
 struct fb_var_screeninfo vinfo;

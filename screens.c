@@ -20,25 +20,24 @@
 	along with nsboot.  If not, see <http://www.gnu.org/licenses/>
 */
 
-#include "browse.h"
-#include "fb.h"
-#include "install.h"
-#include "screens.h"
-#include "touch.h"
-#include "boot.h"
-#include "input.h"
-#include "lv.h"
-#include "lvset.h"
-#include "lib.h"
-
-#include <string.h>
-#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/reboot.h>
+#include <string.h>
+#include <unistd.h>
 
+#include <sys/reboot.h>
+#include <sys/stat.h>
+
+#include "browse.h"
+#include "fb.h"
+#include "input.h"
+#include "install.h"
+#include "lib.h"
+#include "lv.h"
+#include "lvset.h"
 #include "log.h"
-#include "init.h"
+#include "screens.h"
+#include "touch.h"
 
 extern int sel;
 

@@ -20,20 +20,12 @@
 	along with nsboot.  If not, see <http://www.gnu.org/licenses/>
 */
 
-#include <sys/ioctl.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/mman.h>
-#include <linux/fb.h>
-#include <string.h>
-#include <fcntl.h>
-#include <stdio.h>
+#include <errno.h>
 #include <stdarg.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
-#include "types.h"
-#include "touch.h"
-#include "fb.h"
 #include "log.h"
 
 void qfprintf(const char *fname, const char *fmt, ...) {
