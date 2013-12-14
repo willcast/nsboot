@@ -79,7 +79,7 @@ void parse_proc_cmdline(void) {
 
 void check_keep_arg(char *arg) {
 	char *nduid, serialno[68];
-	for (int i = 0; i < ARRAY_SIZE(keepable_args); ++i) {
+	for (int i = 0; i < array_size(keepable_args); ++i) {
 		const char *chk_arg = keepable_args[i];
 		if (!strncmp(arg, chk_arg, strlen(chk_arg))) {
 			strcat(kept_cmdline, arg);

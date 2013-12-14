@@ -25,8 +25,6 @@
 
 #define PROC_CMDLINE_MAX 512
 
-#define ARRAY_SIZE(x) (sizeof(x) / sizeof(*(x)))
-
 struct boot_item {
 	char *label;
 	char *cfgdev;

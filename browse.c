@@ -229,7 +229,7 @@ int file_mode(int num) {
 }
 
 int is_immutable(const char *name) {
-	for (int i = 0; i < ARRAY_SIZE(immutable_files); ++i)
+	for (int i = 0; i < array_size(immutable_files); ++i)
 		if (!strncasecmp(name, immutable_files[i],
 		strlen(immutable_files[i]))) {
 			logprintf("1%s is on the immutablity list", name);

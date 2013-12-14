@@ -28,4 +28,9 @@ void qfscanf(const char *, const char *, ...);
 void qpscanf(const char *, const char *, ...);
 int hexval(char);
 
+#define array_size(x) (sizeof(x) / sizeof(*(x)))
+#define max(a,b) (((a) > (b)) ? (a) : (b))
+#define min(a,b) (((a) < (b)) ? (a) : (b))
+#define bool_inv(b) ((b) = !(b))
+
 #endif
