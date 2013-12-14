@@ -42,7 +42,7 @@
 #include "fb.h"
 #include "log.h"
 
-struct str_list *loglist;
+str_list *loglist;
 
 const uint32_t logpalette[4] = {
 	0xFF404040,

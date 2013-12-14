@@ -39,7 +39,7 @@
 
 struct dir_list *current = NULL;
 struct dir_list *lvs = NULL;
-struct str_list *lv_sets = NULL;
+str_list *lv_sets = NULL;
 long lv_sizes[LV_MAX];
 
 // protected from access so that people can't

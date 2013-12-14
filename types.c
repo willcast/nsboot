@@ -26,10 +26,10 @@
 
 #include "types.h"
 
-struct str_list * new_str_list(int init_size) {
-	struct str_list *ret;
+str_list * new_str_list(int init_size) {
+	str_list *ret;
 
-	ret = malloc(sizeof(struct str_list));
+	ret = malloc(sizeof(str_list));
 
 	if (ret == NULL) {
 		perror("can't allocate str_list");
@@ -50,7 +50,7 @@ struct str_list * new_str_list(int init_size) {
 	return ret;
 }
 
-void free_str_list(struct str_list *list) {
+void free_str_list(str_list *list) {
 	for (int i = 0; i < list->used; ++i)
 		if (list->data[i] != NULL)
 			free(list->data[i]);
@@ -58,7 +58,7 @@ void free_str_list(struct str_list *list) {
 	free(list);
 }
 
-void append_to_str_list(struct str_list *list, char *str) {
+void append_to_str_list(str_list *list, char *str) {
 	if (list->used >= list->size) {
 		int newsize = list->size * 2;
 		char **newdata = realloc(list->data, newsize * sizeof(char *));

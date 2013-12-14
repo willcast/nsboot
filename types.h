@@ -24,16 +24,16 @@
 #ifndef NSBOOT_TYPES_H
 #define NSBOOT_TYPES_H
 
-struct str_list {
+typedef struct {
 	char **data;
 	int size;
 	int used;
-};
+} str_list;
 
 // string list functions
-struct str_list * new_str_list(int size);
-void free_str_list(struct str_list *);
-void append_to_str_list(struct str_list *, char *);
+ str_list * new_str_list(int size);
+void free_str_list(str_list *);
+void append_to_str_list(str_list *, char *);
 
 #endif
 
