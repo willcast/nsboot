@@ -40,24 +40,41 @@ struct dir_list *lvs = NULL;
 str_list *lv_sets = NULL;
 long lv_sizes[LV_MAX];
 
+typedef enum {
+	MATCH_WHOLE,			// match with strcmp
+	MATCH_START			// match with strncmp
+} file_match_type;
+
+typedef struct {
+	file_match_type match_type;
+	char *file_name;
+} immutable_file;
+
 // protected from access so that people can't
 // inadvertently kill bootie or webOS
-char *immutable_files[] = {
-	"/mnt/boot/boot.bin",
-	"/mnt/boot/uImage.moboot",
-	"/mnt/boot/uImage.nsboot",
-	"/mnt/boot/uImage-2.6.35-palm-tenderloin",
-	"/mnt/boot/bin",
-	"/mnt/boot/dev",
-	"/mnt/boot/etc",
-	"/mnt/boot/lib",
-	"/mnt/boot/proc",
-	"/mnt/boot/realroot",
-	"/mnt/boot/sbin",
-	"/mnt/boot/sys",
-	"/mnt/boot/usr",
-	"/mnt/boot/var",
-	"/mnt/firmware"
+immutable_file immutable_files[] = {
+	{ MATCH_WHOLE,		"/mnt/boot/System.map-2.6.35-palm-tenderloin" },
+	{ MATCH_START,		"/mnt/boot/bin" },
+	{ MATCH_WHOLE,		"/mnt/boot/boot-genesis.tar.gz" },
+	{ MATCH_WHOLE,		"/mnt/boot/boot-images.tar.gz" },
+	{ MATCH_WHOLE,		"/mnt/boot/boot.bin" },
+	{ MATCH_WHOLE,		"/mnt/boot/config-2.6.35-palm-tenderloin" },
+	{ MATCH_START,		"/mnt/boot/dev" },
+	{ MATCH_START,		"/mnt/boot/etc" },
+	{ MATCH_WHOLE,		"/mnt/boot/genesis-update.xml" },
+	{ MATCH_WHOLE,		"/mnt/boot/image-update.xml" },
+	{ MATCH_START,		"/mnt/boot/lib" },
+	{ MATCH_START,		"/mnt/boot/proc" },
+	{ MATCH_START,		"/mnt/boot/realroot" },
+	{ MATCH_START,		"/mnt/boot/sbin" },
+	{ MATCH_START,		"/mnt/boot/sys" },
+	{ MATCH_WHOLE,		"/mnt/boot/uImage" },
+	{ MATCH_WHOLE,		"/mnt/boot/uImage-2.6.35-palm-tenderloin" },
+	{ MATCH_WHOLE, 		"/mnt/boot/uImage.nsboot" },
+	{ MATCH_WHOLE,		"/mnt/boot/updatefs-info" ),
+	{ MATCH_START,		"/mnt/boot/usr" },
+	{ MATCH_START,		"/mnt/boot/var" },
+	{ MATCH_START,		"/mnt/firmware" }
 };
 
 int is_hidden(const struct dirent *);
@@ -227,14 +244,32 @@ int file_mode(int num) {
 }
 
 int is_immutable(const char *name) {
-	for (int i = 0; i < array_size(immutable_files); ++i)
-		if (!strncasecmp(name, immutable_files[i],
-		strlen(immutable_files[i]))) {
-			logprintf("1%s is on the immutablity list", name);
-			return 1;
-		}
+	int ret = 0;
 
-	return 0;
+	for (int i = 0; i < array_size(immutable_files); ++i) {
+		switch (immutable_files[i].match_type) {
+		case MATCH_WHOLE:
+			if (!strcasecmp(name, immutable_files[i].file_name))
+				ret = 1;
+			break;
+
+		case MATCH_START:
+			if (!strncasecmp(name, immutable_files[i].file_name,
+				strlen(immutable_files[i].file_name)))
+					ret = 1;
+			break;
+
+		default:
+			logprintf("2unknown immutability match type, idx %d",
+				i);
+			break;
+		}
+	}
+
+	if (ret)
+		logprintf("1%s is on the immutablity list", name);
+
+	return ret;
 }
 
 void delete_file(const char *path) {
