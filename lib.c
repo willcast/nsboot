@@ -26,6 +26,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <sys/stat.h>
+
 #include "log.h"
 
 void qfprintf(const char *fname, const char *fmt, ...) {
@@ -95,3 +97,9 @@ int hexval(char c) {
 	return -1;
 }
 
+int test_file(const char *path) {
+	struct stat test;
+
+	if (stat(path, &test) == -1) return 0;
+	return 1;
+}

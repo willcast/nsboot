@@ -27,6 +27,7 @@ void qfprintf(const char *, const char *, ...);
 void qfscanf(const char *, const char *, ...);
 void qpscanf(const char *, const char *, ...);
 int hexval(char);
+int test_file(const char *);
 
 #define array_size(x) (sizeof(x) / sizeof(*(x)))
 #define max(a,b) (((a) > (b)) ? (a) : (b))

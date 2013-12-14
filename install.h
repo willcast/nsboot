@@ -28,9 +28,6 @@
 #define WIPE_CACHE	0x04
 #define INST_MOBOOT	0x08
 
-// Utility functions
-int test_file(const char *);
-
 void install_native(const char *, const char *, int);
 void install_android(const char *, const char *, int);
 void install_uimage(char *);

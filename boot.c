@@ -32,7 +32,6 @@
 #include "boot.h"
 #include "browse.h"
 #include "init.h"
-#include "install.h"
 #include "lib.h"
 #include "log.h"
 #include "lv.h"

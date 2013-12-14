@@ -31,7 +31,7 @@
 #include <sys/reboot.h>
 #include <sys/stat.h>
 
-#include "install.h"
+#include "lib.h"
 #include "log.h"	
 #include "lv.h"
 

@@ -27,8 +27,6 @@
 
 #include <linux/limits.h>
 
-#include <sys/stat.h>
-
 #include "install.h"
 #include "lib.h"
 #include "log.h"
@@ -44,13 +42,6 @@ const char *update_str = "cat META-INF/com/google/android/updater-script"
 "| sed 's/);/ ; do ln -s $LINK $i ; done/' "
 "| sed 's/\\/system/system/g'"
 "> updatescript";
-
-int test_file(const char *path) {
-	struct stat test;
-
-	if (stat(path, &test) == -1) return 0;
-	return 1;
-}
 
 void install_native(const char *tarname, const char *lv, int size) {
 	char cmd[PATH_MAX];
