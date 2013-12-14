@@ -1,4 +1,4 @@
-                 /*
+/*
     Copyright (C) 2013 Will Castro
 
     This file is part of nsboot.
@@ -23,6 +23,7 @@
 #include "install.h"
 #include "screens.h"
 #include "input.h"
+#include "osk.h"
 #include "touch.h"
 #include "boot.h"
 
@@ -35,28 +36,6 @@ int sel;
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/reboot.h>
-
-const char keyboard[4][4][14][2] = { {
-	{ "`","1","2","3","4","5","6","7","8","9","0","-","=","\\" },
-	{ "", "q","w","e","r","t","y","u","i","o","p","[","]", ""  },
-	{ "", "a","s","d","f","g","h","j","k","l",";","'", "", ""  },
- 	{ "", "z","x","c","v","b","n","m",",",".","/", "", "", ""  }
-}, {
-	{ "~","!","#","@","$","%","^","&","*","(",")","_","+","|" },
-	{ "", "Q","W","E","R","T","Y","U","I","O","P","{","}",""  },
-	{ "", "A","S","D","F","G","H","J","K","L",":","\"","",""  },
-	{ "", "Z","X","C","V","B","N","M","<",">","?", "", "",""  }
-}, {
-	{ "`","1","2","3","4","5","6","7","8","9","0","-","=","\\" },
-	{ "", "Q","W","E","R","T","Y","U","I","O","P","[","]",""   },
-	{ "", "A","S","D","F","G","H","J","K","L",";","'","", ""   },
-	{ "", "Z","X","C","V","B","N","M",",",".","/", "", "",""   }
-}, {
-	{ "~","!","#","@","$","%","^","&","*","(",")","_","+","|" },
-	{ "", "q","w","e","r","t","y","u","i","o","p","{","}", ""  },
-	{ "", "a","s","d","f","g","h","j","k","l",":","\"", "", ""  },
- 	{ "", "z","x","c","v","b","n","m","<",">","?", "", "", ""  }
-} };
 
 // filtloc and filter operate on the filenames and determine whether they
 // may be selected:
@@ -424,139 +403,3 @@ long size_screen(const char *msg, long min, long max) {
 	return size;
 }
 
-long num_input(const char *prompt) {
-	int ts_x, ts_y;
-	int done = 0, cur_ch = 0;
-	char buf[12];
-
-	memset(buf, '\0', sizeof(buf));
-
-	while (!done) {
-		if (cur_ch > sizeof(buf) - 2)
-			cur_ch = sizeof(buf) - 2;
-
-		clear_screen();
-
-		text(prompt, 16,16, 2,2, 0xFFFFFFFF, 0xFF000000);
-		text(buf, 16,68, 6,6, 0xFFFFFFFF, 0xFF000000);
-
-		text_box("7", 16,192, 124,124, 6,
-			0xFFFFFFFF,0xFF808080,0xFFFFFFFF);
-		text_box("8", 156,192, 124,124, 6,
-			0xFFFFFFFF,0xFF808080,0xFFFFFFFF);
-		text_box("9", 296,192, 124,124, 6,
-			0xFFFFFFFF,0xFF808080,0xFFFFFFFF);
-		text_box("4", 16,332, 124,124, 6,
-			0xFFFFFFFF,0xFF808080,0xFFFFFFFF);
-		text_box("5", 156,332, 124,124, 6,
-			0xFFFFFFFF,0xFF808080,0xFFFFFFFF);
-		text_box("6", 296,332, 124,124, 6,
-			0xFFFFFFFF,0xFF808080,0xFFFFFFFF);
-		text_box("1", 16,472, 124,124, 6,
-			0xFFFFFFFF,0xFF808080,0xFFFFFFFF);
-		text_box("2", 156,472, 124,124, 6,
-			0xFFFFFFFF,0xFF808080,0xFFFFFFFF);
-		text_box("3", 296,472, 124,124, 6,
-			0xFFFFFFFF,0xFF808080,0xFFFFFFFF);
-		text_box("back", 16,612, 124,124, 1,
-			0xFFFFFFFF,0xFF000000,0xFFFFFFFF);
-		text_box("0", 156,612, 124,124, 6,
-			0xFFFFFFFF,0xFF808080,0xFFFFFFFF);
-		text_box("enter", 296,612, 124,124, 1,
-			0xFFFFFFFF,0xFF000000,0xFFFFFFFF);
-
-		update_screen();
-		ts_read(&ts_x, &ts_y);
-
-		if (in_box(16, 174, 124, 124)) buf[cur_ch++] = '7';
-		else if (in_box(156, 192, 124, 124)) buf[cur_ch++] = '8';
-		else if (in_box(296, 192, 124, 124)) buf[cur_ch++] = '9';
-		else if (in_box(16, 332, 124, 124)) buf[cur_ch++] = '4';
-		else if (in_box(156, 332, 124, 124)) buf[cur_ch++] = '5';
-		else if (in_box(296, 332, 124, 124)) buf[cur_ch++] = '6';
-		else if (in_box(16, 472, 124, 124)) buf[cur_ch++] = '1';
-		else if (in_box(156, 472, 124, 124)) buf[cur_ch++] = '2';
-		else if (in_box(296, 472, 124, 124)) buf[cur_ch++] = '3';
-		else if (in_box(16, 612, 124, 124)) {
-			if ((buf[cur_ch] == '\0') && cur_ch) --cur_ch;
-			buf[cur_ch] = '\0';
-		} else if (in_box(156, 612, 124, 124)) buf[cur_ch++] = '0';
-		else if (in_box(296, 612, 124, 124)) done = 1;
-	}
-
-	return atol(buf);
-}
-
-char * text_input(const char *prompt) {
-	int ts_x, ts_y;
-	int done = 0;
-	char *output;
-	int cur_ch = 0, shift = 0, caps = 0, n;
-
-	output = malloc(128 * sizeof(char));;
-	if (output == NULL) {
-		logperror("can't allocate textbuf");
-		return NULL;
-	}
-	memset(output, '\0', 128 * sizeof(char));
-
-	while (!done) {
-		n = shift + caps*2;
-		if (cur_ch > 126) cur_ch = 126;
-		clear_screen();
-
-		text(prompt, 16,16, 2,2, 0xFFFFFFFF, 0xFF000000);
-		text(output, 0,68, 1,1, 0xFF808080, 0xFF000000);
-
-		for (int y = 0; y < 4; ++y) for (int x = 0; x < 14; ++x)
-			if (keyboard[n][y][x][0] != '\0')
-				text_box(keyboard[n][y][x], 16+64*x,384+64*y, 52,52,
-					2, 0xFFFFFFFF,0xFF808080,0xFFFFFFFF);
-
-		text_box("back", 912,384, 52,52, 1,
-			0xFF000000,0xFFFFFFFF,0xFF000000);
-		text_box("caps", 16,512, 52,52, 1,
-			caps ? 0xFFFFFFFF : 0xFF000000,
-			caps ? 0xFF000000 : 0xFFFFFFFF,
-			caps ? 0xFFFFFFFF : 0xFF000000);
-		text_box("enter", 784,512, 116,52, 2,
-			0xFF000000,0xFFFFFFFF,0xFF000000);
-		text_box("shift", 16,576, 52,52, 1,
-			shift ? 0xFFFFFFFF : 0xFF000000,
-			shift ? 0xFF000000 : 0xFFFFFFFF,
-			shift ? 0xFFFFFFFF : 0xFF000000);
-		text_box("shift", 784,576, 116,52, 2,
-			shift ? 0xFFFFFFFF : 0xFF000000,
-			shift ? 0xFF000000 : 0xFFFFFFFF,
-			shift ? 0xFFFFFFFF : 0xFF000000);
-		text_box("", 208,640, 448,52, 1,
-			0xFF000000,0xFFFFFFFF,0xFF000000);
-
-		update_screen();
-		ts_read(&ts_x, &ts_y);
-
-		for (int y = 0; y < 4; ++y) for (int x = 0; x < 14; ++x)
-			if (in_box((16+64*x), (384+64*y), 52,52) &&
-				(keyboard[n][y][x][0] != '\0')) {
-					output[cur_ch] = keyboard[n][y][x][0];
-					++cur_ch;
-					shift = 0;
-					break;
-			}
-
-		if (in_box(912, 384, 52, 52)) {
-			if ((output[cur_ch] == '\0') && cur_ch) --cur_ch;
-			output[cur_ch] = '\0';
-		} else if (in_box(16, 512, 52, 52))
-			caps = !caps;
-		else if (in_box(784, 512, 116, 52))
-			done = 1;
-		else if (in_box(16, 576, 116, 52) || in_box(784, 576, 116, 52))
-			shift = !shift;
-		else if (in_box(208, 640, 448, 52))
-			output[cur_ch++] = ' ';
-
-	}
-
-	return output;
-}

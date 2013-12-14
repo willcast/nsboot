@@ -4,9 +4,9 @@ CC := gcc
 CFLAGS := -D_GNU_SOURCE -std=gnu99 -Os -Wall
 LDFLAGS := -static
 SOURCES := boot.c browse.c fb.c init.c input.c install.c lib.c log.c lv.c \
-	lvset.c main.c screens.c touch.c types.c
+	lvset.c main.c osk.c screens.c touch.c types.c
 HEADERS := boot.h browse.h fb.h init.h input.h install.h lib.h log.h lv.h \
-	lvset.h screens.h touch.h types.h
+	lvset.h osk.h screens.h touch.h types.h
 OBJECTS := $(SOURCES:.c=.o)
 EXECUTABLE := nsboot
 UIMAGE := uImage.nsboot
