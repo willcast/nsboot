@@ -22,7 +22,7 @@
 
 #include <stdlib.h>
 
-#include "touch.h"
+#include "input.h"
 #include "log.h"
 
 const char keyboard[4][4][14][2] = { {

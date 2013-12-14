@@ -30,7 +30,7 @@
 #include <linux/limits.h>
 
 #include "boot.h"
-#include "browse.h"
+#include "file.h"
 #include "init.h"
 #include "lib.h"
 #include "log.h"

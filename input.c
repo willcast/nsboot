@@ -1,6 +1,6 @@
 /*
 	nsboot/input.c
-	dynamically generated selection menus
+	input functionality for nsboot
 
 	Copyright (C) 2013 Will Castro
 
@@ -20,389 +20,86 @@
 	along with nsboot.  If not, see <http://www.gnu.org/licenses/>
 */
 
-#include "browse.h"
-#include "fb.h"
-#include "log.h"
-#include "install.h"
-#include "screens.h"
-#include "input.h"
-#include "osk.h"
-#include "touch.h"
-#include "boot.h"
-
-extern struct boot_item *menu;
-extern int menu_size;
-int sel;
-
-#include <string.h>
-#include <unistd.h>
+#include <fcntl.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <sys/reboot.h>
+#include <unistd.h>
 
-// filtloc and filter operate on the filenames and determine whether they
-// may be selected:
-// ALL: don't filter, in this case, filter can be NULL
-// BASE: filter with cmp_base(filename, filter) - only show when part up to
-//       last extension matches
-// EXT: filter with cmp_ext(filename, filter) - only show when (last) extension
-//      matches
-// NAME: filter with strcasecmp(filename, filter) - only show when whole name
-//       matches
-char * select_file(enum filter_spec filtloc, char *filter) {
-	char *selected_file, str[256];
-	int ts_x, ts_y;
-	int npages, pagenum = 1;
-	const int perpage = PERPAGE - 1;
+#include <linux/input.h>
 
-	DECL_LINE(backbtn);
-	DECL_LINE(prevpage);
-	DECL_LINE(nextpage);
+#include <sys/file.h>
+#include <sys/stat.h>
 
-	strcpy(sbstr, "file browser");
+#include "input.h"
 
-	selected_file = malloc(PATH_MAX * sizeof(char));
+int ts_fd;
 
-	selected_file[0] = '\0';
+int ts_open(char *dev_file) {
+	ts_fd = open(dev_file, O_RDONLY);
+	if (ts_fd < 0) return 1;
+	flock(ts_fd, LOCK_EX);
+	return 0;
+}
 
-	while (selected_file[0] == '\0') {
-		char *pwd = NULL;
-		int n;
-		int *by, *kept;
-		int j, nkept;
-		int match, keep;
-		uint16_t mode;
+void ts_close(void) {
+	flock(ts_fd, LOCK_UN);
+	close(ts_fd);
+}
 
-		sel = -1;
+void ts_read(int *x, int *y) {
+	int ts_x, ts_y, ts_id, ts_maj, ts_syn = 0, nbytes;
+	struct input_event ev;
+	static struct timeval ts_time, ts_last_time = {0,0}, ts_diff_time;
 
-		clear_screen();
-		START_LIST(8, 48, 448, 0xFF404040, 0xFF808080, 0xFFC0C0C0)
-
-		update_dir_list();
-		n = file_count();
-		by = malloc(n * sizeof(int));
-		kept = malloc(n * sizeof(int));
-		npages = 1 + n / perpage;
-
-		pwd = getcwd(pwd, PATH_MAX);
-		text(pwd, 16, 24, 1, 1, 0xFF606060, 0xFF000000);
-
-		DRAW_LINE(backbtn, "back", "return to previous menu without making a selection"); 
-		if (pagenum > 1) {
-			DRAW_LINE(prevpage, "previous page", "not all files are shown"); 
+	while ((ts_maj != 0) || (ts_id != 1) || (!ts_syn)) {
+		nbytes = read(ts_fd, &ev, sizeof(struct input_event));
+		if (nbytes != sizeof(struct input_event)) {
+			perror("can't read touchscreen");
+			continue;
 		}
 
-		j = 0;
-		for (int i = 0; i < n; ++i) {
-			switch (filtloc) {
-			case ANY:
-				match = 1;
+		if (ev.type == EV_SYN) ts_syn = 1;
+		else if (ev.type == EV_ABS) {
+			switch (ev.code) {
+			case ABS_MT_TRACKING_ID:
+				ts_id = ev.value;
 				break;
-			case BASE:
-				match = !cmp_base(file_name(i), filter);
+			case ABS_MT_TOUCH_MAJOR:
+				ts_maj = ev.value;
 				break;
-			case EXT:
-				match = !cmp_ext(file_name(i), filter);
+			case ABS_MT_POSITION_X:
+				ts_x = ev.value;
 				break;
-			case NAME:
-				match = !strcasecmp(file_name(i), filter);
+			case ABS_MT_POSITION_Y:
+				ts_y = ev.value;
 				break;
-			default:
-				match = 0;
-			}
-
-			if (file_is_dir(i) || match) {
-				kept[j] = i; 
-				++j;
-			}
-		}
-		nkept = j;
-
-		for (int i = perpage * (pagenum - 1); i < nkept; ++i) {
-			if (i > pagenum * perpage) break;
-
-			snprintf(str, sizeof(str), "permissions = %o", file_mode(kept[i]) & 07777);
-
-			USECOLR = !USECOLR; 
-			CURCOLR = USECOLR ? BG1COLR : BG2COLR; 
-			current_y += 48; 
-			by[i] =  current_y; 
-			fill_rect(0, by[i], 1024, 44, CURCOLR);
-			text(file_name(kept[i]), col1_x, by[i] + 8, 1, 1, 0xFFFFFFFF, CURCOLR);
-			text(str, col2_x, by[i] + 8, 1, 1, 0xFFFFFFFF, CURCOLR);
-		}
-		if (pagenum < npages) {
-			DRAW_LINE(nextpage, "next page", "not all files are shown");
-		}
-
-		while (sel == -1) {
-			update_screen();
-			ts_read(&ts_x, &ts_y);
-
-			if (PRESSED(backbtn)) {
-				free(by);
-				free(kept);
-				return NULL;
-			}
-			for (int i = perpage * (pagenum - 1); i <= nkept; ++i)
-				if (in_box(0, by[i], 1024, 44))
-					sel = kept[i];
-			if (PRESSED(prevpage)) {
-				--pagenum;
-				break;
-			} else if (PRESSED(nextpage)) {
-				++pagenum;
-				break;
-			}
-		}
-
-		if (sel != -1) {
-			free(by);
-			free(kept);
-			pagenum = 1;
-	
-			if (file_is_dir(sel)) {
-				if (chdir(file_name(sel)) == -1)
-					perror("chdir");
-			} else {
-				strcpy(selected_file, pwd);
-				strcat(selected_file, "/");
-				strcat(selected_file, file_name(sel));
 			}
 		}
 	}
-
-	return selected_file;
+	vibrate(40);
+	usleep(50000);
+	*x = ts_x;
+	*y = ts_y;
 }
 
-char * select_lv(int disable_android) {
-	int n;
-	int ts_x, ts_y;
-	int *by, pagenum = 1, npages, ret = 0;	
-	char *selected_lv = NULL, str[64];
-
-	DECL_LINE(backbtn);
-	DECL_LINE(prevpage);
-	DECL_LINE(nextpage);
-
-	strcpy(sbstr, "select volume");
-
-	update_lv_lists();
-	n = lv_count();
-	by = malloc(n * sizeof(int));
-	npages = 1 + n / PERPAGE;
-
-	do {
-		clear_screen();
-		START_LIST(8, 32, 352, 0xFF404040, 0xFF808080, 0xFFC0C0C0)
-
-		DRAW_LINE(backbtn, "back", "return to previous menu without making a selection"); 
-		if (pagenum > 1) {
-			DRAW_LINE(prevpage, "previous page", "not all volumes are shown"); 
-		}
-
-		for (int i = PERPAGE * (pagenum - 1); i < n; ++i) {
-			if (i > pagenum * PERPAGE) break;
-			if (is_android(lv_name(i)) && disable_android)
-				continue;
-
-			snprintf(str, sizeof(str), "size = %ld MiB", lv_sizes[i]);
-
-			USECOLR = !USECOLR; 
-			CURCOLR = USECOLR ? BG1COLR : BG2COLR; 
-			current_y += 48; 
-			by[i] =  current_y; 
-			fill_rect(0, by[i], 1024, 44, CURCOLR);
-			text(lv_name(i), col1_x, by[i] + 8, 2, 2, 0xFFFFFFFF, CURCOLR);
-			text(str, col2_x, by[i] + 8, 1, 1, 0xFFFFFFFF, CURCOLR);
-		}
-		if (pagenum < npages) {
-			DRAW_LINE(nextpage, "next page", "not all volumes are shown");
-		}
-
-		update_screen();
-		ts_read(&ts_x, &ts_y);
-		if (PRESSED(backbtn)) ret = 2;
-
-		for (int i = PERPAGE * (pagenum - 1); i < n; ++i)
-			if (in_box(0, by[i], 1024, 44)) {
-				if (i > pagenum * PERPAGE) break;
-				selected_lv = strdup(lv_name(i));
-				ret = 1;				
-			}
-		if (PRESSED(prevpage)) --pagenum;
-		else if (PRESSED(nextpage)) ++pagenum;
-	} while (!ret);
-	
-	free(by);
-
-	return selected_lv;
+void wait_touch(void) {
+	int dummy;
+	ts_read(&dummy, &dummy);
 }
 
-char * select_lv_set(void) {
-	int *by, pagenum = 1, npages;
-	int ts_x, ts_y;
-	int n, ret = 0;
-	char *selected_set = NULL;
+void vibrate(int ms) {
+	int vibrator_fd;
+	char str_ms[8];
 
-	DECL_LINE(backbtn);
-	DECL_LINE(prevpage);
-	DECL_LINE(nextpage);
-
-	strcpy(sbstr, "select volume set");
-
-	update_lv_lists();
-	n = lv_set_count();
-	by = malloc(n * sizeof(int));
-	npages = 1 + n / PERPAGE;
-	
-	do {
-		clear_screen();
-		START_LIST(8, 32, 352, 0xFF404040, 0xFF808080, 0xFFC0C0C0)
-
-		DRAW_LINE(backbtn, "back", "return to previous menu without making a selection"); 
-		if (pagenum > 1) {
-			DRAW_LINE(prevpage, "previous page", "not all volume sets are shown"); 
-		}
-		for (int i = PERPAGE * (pagenum - 1); i < n; ++i) {
-			if (i > pagenum * PERPAGE) break;
-		
-			USECOLR = !USECOLR; 
-			CURCOLR = USECOLR ? BG1COLR : BG2COLR; 
-			current_y += 48; 
-			by[i] =  current_y; 
-			fill_rect(0, by[i], 1024, 44, CURCOLR);
-			text(lv_set_name(i), col1_x, by[i] + 8, 2, 2, 0xFFFFFFFF, CURCOLR);
-		}
-		if (pagenum < npages) {
-			DRAW_LINE(nextpage, "next page", "not all volume sets are shown");
-		}
-
-		update_screen();
-		ts_read(&ts_x, &ts_y);
-		if (PRESSED(backbtn)) ret = 2;
-
-		for (int i = PERPAGE * (pagenum - 1); i < n; ++i)
-			if (in_box(0, by[i], 1024, 44)) {
-				if (i > pagenum * PERPAGE) break;
-				selected_set = strdup(lv_set_name(i));
-				ret = 1;				
-			}
-		if (PRESSED(prevpage)) --pagenum;
-		else if (PRESSED(nextpage)) ++pagenum;
-	} while (!ret);
-
-	free(by);
-
-	return selected_set;
-}
-
-// 0 for false, 1 for true
-int confirm(const char *label) {
-	int ret = -1;
-	int ts_x, ts_y;
-	char str[64];
-
-	DECL_LINE(yesbtn);
-	DECL_LINE(nobtn);
-
-	strcpy(sbstr, "confirm action");
-
-	if (label == NULL)
-		strcpy(str, "are you sure?");
-	else
-		sprintf(str, "are you sure you want to %s?", label);
-
-	clear_screen();
-
-	START_LIST(16, 96, 416, 0xFF00FF00, 0xFF0000FF, 0xFFC0C0C0);
-
-	text(str, 16,16, 2,2, 0xFFC0C0C0, 0x00000000);
-
-	DRAW_LINE(yesbtn, "yes", "perform the action");
-	DRAW_LINE(nobtn, "no", "cancel the action and return to the previous screen");
-
-	while (ret == -1) {
-		update_screen();
-		ts_read(&ts_x, &ts_y);
-
-		if (PRESSED(yesbtn)) ret = 1;
-		else if (PRESSED(nobtn)) ret = 0;
+	vibrator_fd = open("/sys/devices/virtual/timed_output/vibrator/enable",
+		O_WRONLY);
+	if (vibrator_fd < 0) {
+		perror("can't open vibrator");
+		return;
 	}
-	return ret;
+
+	sprintf(str_ms, "%d", ms);
+
+	if (write(vibrator_fd, str_ms, 8) < 2)
+		perror("can't write to vibrator");
+	close(vibrator_fd);
 }
-
-void boot_menu(void) {
-	int ts_x, ts_y;
-	int npages, pagenum = 1;
-	int *by, ret = -1;
-	char helpstr[256];
-
-	DECL_LINE(backbtn);
-	DECL_LINE(prevpage);
-	DECL_LINE(nextpage);
-
-	if (!menu_size) scan_boot_lvs();
-	by = malloc(menu_size * sizeof(int));
-	npages = 1 + menu_size / PERPAGE;
-
-	strcpy(sbstr, "boot menu");
-
-	clear_screen();
-
-	do {
-		clear_screen();
-		START_LIST(0, 32, 384, 0xFF404040, 0xFF808080, 0xFFC0C0C0)
-		col1_x = 8;
-
-		DRAW_LINE(backbtn, "back", "return to previous menu without making a selection"); 
-		if (pagenum > 1) {
-			DRAW_LINE(prevpage, "previous page", "not all available kernels are shown"); 
-		}
-
-		for (int i = PERPAGE * (pagenum - 1); i < menu_size; ++i) {
-			struct boot_item *cur_item = menu + i; 
-
-			if (i > pagenum * PERPAGE) break;
-
-			snprintf(helpstr, sizeof(helpstr), "volume is %s,\nkernel is %s", 
-					cur_item->cfgdev, cur_item->kernel);
-
-			USECOLR = !USECOLR; 
-			CURCOLR = USECOLR ? BG1COLR : BG2COLR; 
-			current_y += 48; 
-			by[i] =  current_y; 
-			fill_rect(0, by[i], 1024, 44, CURCOLR);
-			text(cur_item->label, col1_x, by[i] + 8, 1, 1, 0xFFFFFFFF, CURCOLR);
-			text(helpstr, col2_x, by[i] + 8, 1, 1, 0xFFFFFFFF, CURCOLR);
-		}
-
-		while (ret == -1) {
-			update_screen();
-			ts_read(&ts_x, &ts_y);
-
-			if (PRESSED(backbtn)) ret = 1;
-
-			for (int i = 0; i < menu_size; ++i) {
-				if (i > pagenum * PERPAGE) break;
-				if (in_box(0, by[i], 1024, 44))
-					boot_kexec(i);
-			}
-			if (PRESSED(nextpage)) ++pagenum;
-			else if (PRESSED(prevpage)) --pagenum;
-		}
-	} while (!ret);
-
-	free(by);
-}
-
-long size_screen(const char *msg, long min, long max) {
-	long size;
-	do {
-		size = num_input(msg);
-		if (size < min) logprintf("1size too small, lower limit is %ld", min);
-		if (size > max) logprintf("1size too big, upper limit is %ld", max);
-	} while ((size < min) || (size > max));
-	return size;
-}
-

@@ -26,6 +26,7 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <fcntl.h>
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
@@ -33,15 +34,14 @@
 #include <sys/mount.h>
 #include <sys/time.h>
 
-#include "browse.h"
-#include "fb.h"
-#include "touch.h"
-#include "screens.h"
 #include "boot.h"
-#include "lv.h"
-#include "log.h"
-
+#include "fb.h"
+#include "file.h"
 #include "init.h"
+#include "input.h"
+#include "log.h"
+#include "lv.h"
+#include "menus.h"
 
 int main(int argc, char **argv) {
 	strcpy(sbstr, "loading...");

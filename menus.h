@@ -1,5 +1,5 @@
 /*
-	nsboot/screens.c
+	nsboot/menus.h
 	header for static navigation menus for nsboot
 
 	Copyright (C) 2013 Will Castro

@@ -1,6 +1,6 @@
 /*
-	nsboot/browse.c
-	dynamically generated lists of objects
+	nsboot/file.c
+	wrappers for file management functions
 
 	Copyright (C) 2013 Will Castro
 
@@ -29,7 +29,7 @@
 
 #include <linux/limits.h>
 
-#include "browse.h"
+#include "file.h"
 #include "lib.h"
 #include "log.h"
 #include "lv.h"
@@ -71,7 +71,7 @@ immutable_file immutable_files[] = {
 	{ MATCH_WHOLE,		"/mnt/boot/uImage" },
 	{ MATCH_WHOLE,		"/mnt/boot/uImage-2.6.35-palm-tenderloin" },
 	{ MATCH_WHOLE, 		"/mnt/boot/uImage.nsboot" },
-	{ MATCH_WHOLE,		"/mnt/boot/updatefs-info" ),
+	{ MATCH_WHOLE,		"/mnt/boot/updatefs-info" },
 	{ MATCH_START,		"/mnt/boot/usr" },
 	{ MATCH_START,		"/mnt/boot/var" },
 	{ MATCH_START,		"/mnt/firmware" }

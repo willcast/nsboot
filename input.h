@@ -1,6 +1,6 @@
 /*
 	nsboot/input.h
-	header for dynamically generated selection menus
+	header for input functionality for nsboot
 
 	Copyright (C) 2013 Will Castro
 
@@ -20,19 +20,14 @@
 	along with nsboot.  If not, see <http://www.gnu.org/licenses/>
 */
 
-#ifndef NSBOOT_INPUT_H
-#define NSBOOT_INPUT_H
+#ifndef NSBOOT_TOUCH_H
 
-#define PERPAGE 12
+#define in_box(x, y, w, h) ((ts_x >= x) && (ts_x <= x+w) && (ts_y >= y) && (ts_y <= y+h))
 
-void boot_menu(void);
-void info_screen(void);
-
-char * select_file(enum filter_spec, char *);
-char * select_lv(int);
-char * select_lv_set(void);
-
-int confirm(const char *);
-long size_screen(const char *, long, long);
+int ts_open(char *);
+void ts_read(int *, int *);
+void ts_close(void);
+void wait_touch(void);
+void vibrate(int);
 
 #endif

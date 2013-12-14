@@ -32,9 +32,9 @@
 #include <string.h>
 
 #include "fb.h"
+#include "input.h"
 #include "lib.h"
 #include "log.h"
-#include "touch.h"
 #include "types.h"
 
 str_list *loglist;

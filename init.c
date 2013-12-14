@@ -33,10 +33,10 @@
 #include "boot.h"
 #include "fb.h"
 #include "init.h"
+#include "input.h"
 #include "lib.h"
 #include "log.h"
 #include "lv.h"
-#include "touch.h"
 
 void do_init(void) {
 	char ts_name[PATH_MAX];

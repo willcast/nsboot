@@ -21,10 +21,10 @@
 CC := gcc
 CFLAGS := -D_GNU_SOURCE -std=gnu99 -Os -Wall
 LDFLAGS := -static
-SOURCES := boot.c browse.c fb.c init.c input.c install.c lib.c log.c lv.c \
-	lvset.c main.c osk.c screens.c touch.c types.c
-HEADERS := boot.h browse.h fb.h init.h input.h install.h lib.h log.h lv.h \
-	lvset.h osk.h screens.h touch.h types.h
+SOURCES := boot.c fb.c file.c init.c input.c install.c lib.c log.c lv.c \
+	lvset.c main.c menus.c osk.c select.c types.c
+HEADERS := boot.h fb.h file.h init.h input.h install.h lib.h log.h lv.h \
+	lvset.h menus.h osk.h select.h types.h
 OBJECTS := $(SOURCES:.c=.o)
 EXECUTABLE := nsboot
 UIMAGE := uImage.nsboot

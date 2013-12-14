@@ -1,6 +1,6 @@
 /*
-	nsboot/browse.h
-	header for dynamically generated lists of objects
+	nsboot/file.h
+	header of wrappers for file management functions
 
 	Copyright (C) 2013 Will Castro
 

@@ -1,5 +1,5 @@
 /*
-	nsboot/screens.c
+	nsboot/menus.c
 	static navigation menus for nsboot
 
 	Copyright (C) 2013 Will Castro
@@ -28,16 +28,16 @@
 #include <sys/reboot.h>
 #include <sys/stat.h>
 
-#include "browse.h"
 #include "fb.h"
+#include "file.h"
 #include "input.h"
 #include "install.h"
 #include "lib.h"
 #include "lv.h"
 #include "lvset.h"
 #include "log.h"
-#include "screens.h"
-#include "touch.h"
+#include "menus.h"
+#include "select.h"
 
 extern int sel;
 
