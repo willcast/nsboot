@@ -1,5 +1,5 @@
 /*
-	nsboot/osk.c
+	nsboot/osk.h
 	header for onscreen keyboard and numpad implementation
 
 	Copyright (C) 2013 Will Castro
