@@ -24,6 +24,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -39,6 +40,13 @@
 #include "log.h"
 
 int ts_fd;
+int ts_usable = 0;
+
+int gpio_keys_fd;
+int gpio_keys_usable = 0;
+
+int pmic_keys_fd;
+int pmic_keys_usable = 0;
 
 int vibrator_fd;
 int vibrator_usable = 0;
@@ -57,22 +65,49 @@ int input_open(void) {
 	}
 	if (attempt == 5) {
 		logprintf("3unable to detect touch screen!");
-		return 1;
+	} else {
+		snprintf(dev_path, sizeof(dev_path), "/dev/%s", dev_name);
+		free(dev_name);
+		logprintf("0trying to open touch screen at %s", dev_path);
+		if (!ts_open(dev_path)) 
+			ts_usable = 1;
 	}
 
-	snprintf(dev_path, sizeof(dev_path), "/dev/%s", dev_name);
+	dev_name = name_to_event_dev("gpio-keys");
+	if (dev_name == NULL) {
+		logprintf("3unable to detect GPIO keys!");
+	} else {
+		snprintf(dev_path, sizeof(dev_path), "/dev/%s", dev_name);
+		free(dev_name);
+		logprintf("0trying to open GPIO keys at %s", dev_path);
+		if (!gpio_keys_open(dev_path))
+			gpio_keys_usable = 1;
+	}
 
-	free(dev_name);
+	dev_name = name_to_event_dev("pmic8058_pwrkey");
+	if (dev_name == NULL) {
+		logprintf("3unable to detect PMIC keys!");
+	} else {
+		snprintf(dev_path, sizeof(dev_path), "/dev/%s", dev_name);
+		free(dev_name);
+		logprintf("0trying to open PMIC keys at %s", dev_path);
+		if (!pmic_keys_open(dev_path))
+			pmic_keys_usable = 1;
+	}
 
-	logprintf("0trying to open touch screen at %s", dev_path);
-	if (ts_open(dev_path))
+	if (!ts_usable && !(gpio_keys_usable && pmic_keys_usable)) {
+		logprintf("3no usable input devices!");
+		input_close();
 		return 1;
+	}
 
 	return 0;
 }
 
 void input_close(void) {
 	ts_close();
+	gpio_keys_close();
+	pmic_keys_close();
 
 	qfprintf("/sys/devices/platform/cy8ctma395/vdd", "0");
 }
@@ -127,6 +162,32 @@ int ts_open(char *dev_file) {
 	if (ts_fd < 0) {
 		logperror("error opening touchscreen event device");
 		return 1;
+	} else {
+		ts_usable = 1;
+	}
+
+	return 0;
+}
+
+int gpio_keys_open(char *dev_file) {
+	gpio_keys_fd = open(dev_file, O_WRONLY);
+	if (gpio_keys_fd < 0) {
+		logperror("error opening GPIO key event device");
+		return 1;
+	} else {
+		gpio_keys_usable = 1;
+	}
+
+	return 0;
+}
+
+int pmic_keys_open(char *dev_file) {
+	pmic_keys_fd = open(dev_file, O_WRONLY);
+	if (pmic_keys_fd < 0) {
+		logperror("error opening PMIC key event device");
+		return 1;
+	} else {
+		pmic_keys_usable = 1;
 	}
 
 	return 0;
@@ -141,8 +202,24 @@ void vibrator_open(char *dev_file) {
 }
 
 void ts_close(void) {
-	close(ts_fd);
+	if (ts_usable) {
+		close(ts_fd);
+		ts_usable = 0;
+	}
+}
 
+void gpio_keys_close(void) {
+	if (gpio_keys_usable) {
+		close(gpio_keys_fd);
+		gpio_keys_usable = 0;
+	}
+}
+
+void pmic_keys_close(void) {
+	if (pmic_keys_usable) {
+		close(pmic_keys_fd);
+		pmic_keys_usable = 0;
+	}
 }
 
 void vibrator_close(void) {

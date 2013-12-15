@@ -33,9 +33,19 @@ int ts_open(char *);
 void ts_read(int *, int *);
 void ts_close(void);
 void wait_touch(void);
+extern int ts_usable;
+
+int gpio_keys_open(char *);
+void gpio_keys_close(void);
+extern int gpio_keys_usable;
+
+int pmic_keys_open(char *);
+void pmic_keys_close(void);
+extern int pmic_keys_usable;
 
 void vibrator_open(char *);
 void vibrator_close(void);
 void vibrate(int);
+extern int vibrator_usable;
 
 #endif
