@@ -78,6 +78,8 @@ void ts_read(int *x, int *y) {
 			case ABS_Y:
 				ts_y = ev.value;
 				break;
+			case ABS_PRESSURE:
+				break;
 			default:
 				logprintf("0unknown code in EV_ABS event on touchscreen");
 			}
