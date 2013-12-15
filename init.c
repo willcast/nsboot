@@ -39,14 +39,11 @@
 #include "lv.h"
 
 void do_init(void) {
-	char ts_name[PATH_MAX];
 	int code, i;
 
 	atexit(do_cleanup);
 
 	putenv("PATH=/bin");
-
-	strcpy(ts_name, "/dev/event2");
 
 	init_log();
 	logprintf("0welcome to nsboot");
@@ -115,16 +112,11 @@ void do_init(void) {
 	logprintf("0starting touchscreen service");
 	system_logged("tssrv >/var/tssrv.out 2>/var/tssrv.err &");
 
-	for (i = 0; i < 5; ++i) {
-		logprintf("0initializing touch screen (attempt %d)", i + 1);
-		if (!ts_open(ts_name)) break;
-		usleep(400000);
-	}
-	if (i == 5) {
-		logprintf("3failed to init TS!");
+	if (input_open()) {
+		logprintf("3failed to set up input!");
 		exit(1);
 	}
-	atexit(ts_close);
+	atexit(input_close);
 
 	logprintf("0mounting base partitions");
 
@@ -173,8 +165,8 @@ void do_shutdown(void) {
 	logprintf("0disabling framebuffer");
 	if (is_fb_available()) fb_close();
 
-	logprintf("0disabling touch screen");
-	qfprintf("/sys/devices/platform/cy8ctma395/vdd", "0");
+	logprintf("0disabling input");
+	input_close();
 
 	logprintf("0unmounting all volumes");
 	(void)chdir("/");
@@ -228,8 +220,6 @@ void enable_coredumps(void) {
 }
 
 void start_adbd(void) {
-	int code;
-
 	logprintf("0stopping adbd");
 	system_logged("killall adbd");
 

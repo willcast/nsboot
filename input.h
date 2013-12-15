@@ -25,6 +25,10 @@
 
 #define in_box(x, y, w, h) ((ts_x >= x) && (ts_x <= x+w) && (ts_y >= y) && (ts_y <= y+h))
 
+int input_open(void);
+void input_close(void);
+char * name_to_event_dev(char *);
+
 int ts_open(char *);
 void ts_read(int *, int *);
 void ts_close(void);

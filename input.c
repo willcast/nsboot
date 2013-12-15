@@ -20,22 +20,107 @@
 	along with nsboot.  If not, see <http://www.gnu.org/licenses/>
 */
 
+#include <dirent.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <string.h>
 #include <unistd.h>
 
 #include <linux/input.h>
+#include <linux/limits.h>
 
 #include <sys/file.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 
 #include "input.h"
+#include "lib.h"
 #include "log.h"
 
 int ts_fd;
 
 int vibrator_fd;
 int vibrator_usable = 0;
+
+int input_open(void) {
+	char dev_path[PATH_MAX];
+	char *dev_name = NULL;
+	int attempt;
+
+	for (attempt = 0; attempt < 5; ++attempt) {
+		usleep(333333);
+		logprintf("0locating touch screen (attempt %d)", attempt + 1);
+		dev_name = name_to_event_dev("HPTouchpad");
+		if (dev_name != NULL)
+			break;
+	}
+	if (attempt == 5) {
+		logprintf("3unable to detect touch screen!");
+		return 1;
+	}
+
+	snprintf(dev_path, sizeof(dev_path), "/dev/%s", dev_name);
+
+	free(dev_name);
+
+	logprintf("0trying to open touch screen at %s", dev_path);
+	if (ts_open(dev_path))
+		return 1;
+
+	return 0;
+}
+
+void input_close(void) {
+	ts_close();
+
+	qfprintf("/sys/devices/platform/cy8ctma395/vdd", "0");
+}
+
+char * name_to_event_dev(char *match_name) {
+	DIR *sysfs_dir;
+	struct dirent *sysfs_dir_entry;
+
+	errno = 0;
+	sysfs_dir = opendir("/sys/class/input");
+	if (sysfs_dir == NULL) {
+		logperror("error opening sysfs input class dir");
+		return NULL;
+	}
+
+	sysfs_dir_entry = (DIR *)99;
+	while (sysfs_dir_entry != NULL) {
+		char name_file_path[PATH_MAX];
+		char cur_name[256];
+			
+		errno = 0;
+		sysfs_dir_entry = readdir(sysfs_dir);
+		if (errno) {
+			logperror("error reading sysfs dir entry");
+			closedir(sysfs_dir);
+			return NULL;
+		}
+
+		if (strncmp("event", sysfs_dir_entry->d_name, 5))
+			continue;	
+
+		snprintf(name_file_path, sizeof(name_file_path),
+			"/sys/class/input/%s/device/name",
+			sysfs_dir_entry->d_name);
+
+		if (test_file(name_file_path))
+			qfscanf(name_file_path, "%s", cur_name);
+
+		if (!strcmp(cur_name, match_name)) {
+			closedir(sysfs_dir);
+
+			return strdup(sysfs_dir_entry->d_name);
+		}
+	}
+
+	closedir(sysfs_dir);
+	return NULL;
+}
 
 int ts_open(char *dev_file) {
 	ts_fd = open(dev_file, O_RDONLY);
@@ -57,6 +142,7 @@ void vibrator_open(char *dev_file) {
 
 void ts_close(void) {
 	close(ts_fd);
+
 }
 
 void vibrator_close(void) {
