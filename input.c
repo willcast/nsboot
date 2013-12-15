@@ -47,36 +47,57 @@ void ts_close(void) {
 
 void ts_read(int *x, int *y) {
 	int ts_x = -1, ts_y = -1;
-	int ts_id = 0, ts_maj = 0, ts_syn = 0;
+	int ts_touch = 0;
+	int ts_syn = 0;
 	int nbytes;
 	struct input_event ev;
 
-	while ((ts_maj != 0) || (ts_id != 1) || (!ts_syn)
-		|| (ts_x == -1) || (ts_y == -1)) {
+	while ((!ts_syn) || (ts_x == -1) || (ts_y == -1) || (!ts_touch)) {
 		nbytes = read(ts_fd, &ev, sizeof(struct input_event));
 		if (nbytes != sizeof(struct input_event)) {
-			perror("can't read touchscreen");
+			perror("error reading touchscreen (will retry)");
 			continue;
 		}
 
-		if (ev.type == EV_SYN) ts_syn = 1;
-		else if (ev.type == EV_ABS) {
+		switch (ev.type) {
+		case EV_SYN:
 			switch (ev.code) {
-			case ABS_MT_TRACKING_ID:
-				ts_id = ev.value;
+			case SYN_REPORT:
+				ts_syn = 1;
 				break;
-			case ABS_MT_TOUCH_MAJOR:
-				ts_maj = ev.value;
-				break;
-			case ABS_MT_POSITION_X:
+			default:
+				logprintf("0unknown code in EV_SYN event on touchscreen");
+			}
+			break;
+		
+		case EV_ABS:
+			switch (ev.code) {
+			case ABS_X:
 				ts_x = ev.value;
 				break;
-			case ABS_MT_POSITION_Y:
+			case ABS_Y:
 				ts_y = ev.value;
 				break;
+			default:
+				logprintf("0unknown code in EV_ABS event on touchscreen");
 			}
+			break;
+
+		case EV_KEY:
+			switch (ev.code) {
+			case BTN_TOUCH:
+				ts_touch = ev.value;
+				break;
+			default:
+				logprintf("0unknown code in EV_KEY event on touchscreen");
+			}
+			break;
+
+		default:
+			logprintf("0unknown type in event on touchscreen");
 		}
 	}
+
 	vibrate(40);
 	usleep(50000);
 	*x = ts_x;
