@@ -20,8 +20,8 @@
 	along with nsboot.  If not, see <http://www.gnu.org/licenses/>
 */
 
-#ifndef NSBOOT_SCREENS_H
-#define NSBOOT_SCREENS_H
+#ifndef NSBOOT_MENUS_H
+#define NSBOOT_MENUS_H
 
 
 #define START_LIST(list_x, list_y, help_x, colr1, colr2, colr3) \

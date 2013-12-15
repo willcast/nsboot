@@ -20,8 +20,8 @@
 	along with nsboot.  If not, see <http://www.gnu.org/licenses/>
 */
 
-#ifndef NSBOOT_CFG_H
-#define NSBOOT_CFG_H
+#ifndef NSBOOT_BOOT_H
+#define NSBOOT_BOOT_H
 
 #define PROC_CMDLINE_MAX 512
 

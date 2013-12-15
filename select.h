@@ -20,8 +20,8 @@
 	along with nsboot.  If not, see <http://www.gnu.org/licenses/>
 */
 
-#ifndef NSBOOT_INPUT_H
-#define NSBOOT_INPUT_H
+#ifndef NSBOOT_SELECT_H
+#define NSBOOT_SELECT_H
 
 #define PERPAGE 12
 

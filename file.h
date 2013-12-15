@@ -20,8 +20,8 @@
 	along with nsboot.  If not, see <http://www.gnu.org/licenses/>
 */
 
-#ifndef NSBOOT_BROWSE_H
-#define NSBOOT_BROWSE_H
+#ifndef NSBOOT_FILE_H
+#define NSBOOT_FILE_H
 
 #include <dirent.h>
 #include <sys/stat.h>

@@ -20,7 +20,8 @@
 	along with nsboot.  If not, see <http://www.gnu.org/licenses/>
 */
 
-#ifndef NSBOOT_TOUCH_H
+#ifndef NSBOOT_INPUT_H
+#define NSBOOT_INPUT_H
 
 #define in_box(x, y, w, h) ((ts_x >= x) && (ts_x <= x+w) && (ts_y >= y) && (ts_y <= y+h))
 
