@@ -30,20 +30,42 @@
 #include <sys/stat.h>
 
 #include "input.h"
+#include "log.h"
 
 int ts_fd;
 
+int vibrator_fd;
+int vibrator_usable = 0;
+
 int ts_open(char *dev_file) {
 	ts_fd = open(dev_file, O_RDONLY);
-	if (ts_fd < 0) return 1;
-	flock(ts_fd, LOCK_EX);
+	if (ts_fd < 0) {
+		logperror("error opening touchscreen event device");
+		return 1;
+	}
+
 	return 0;
 }
 
+void vibrator_open(char *dev_file) {
+	vibrator_fd = open(dev_file, O_WRONLY);
+	if (vibrator_fd < 0)
+		logperror("error opening vibrator sysfs file");
+	else
+		vibrator_usable = 1;
+}
+
 void ts_close(void) {
-	flock(ts_fd, LOCK_UN);
 	close(ts_fd);
 }
+
+void vibrator_close(void) {
+	if (vibrator_usable) {
+		close(vibrator_fd);
+		vibrator_usable = 0;
+	}
+}
+
 
 void ts_read(int *x, int *y) {
 	int ts_x = -1, ts_y = -1;
@@ -112,19 +134,13 @@ void wait_touch(void) {
 }
 
 void vibrate(int ms) {
-	int vibrator_fd;
 	char str_ms[8];
 
-	vibrator_fd = open("/sys/devices/virtual/timed_output/vibrator/enable",
-		O_WRONLY);
-	if (vibrator_fd < 0) {
-		perror("can't open vibrator");
+	if (!vibrator_usable)
 		return;
-	}
 
-	sprintf(str_ms, "%d", ms);
+	snprintf(str_ms, sizeof(str_ms), "%d\n", ms);
 
 	if (write(vibrator_fd, str_ms, 8) < 2)
-		perror("can't write to vibrator");
-	close(vibrator_fd);
+		logperror("can't write to vibrator");
 }

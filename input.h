@@ -29,6 +29,9 @@ int ts_open(char *);
 void ts_read(int *, int *);
 void ts_close(void);
 void wait_touch(void);
+
+void vibrator_open(char *);
+void vibrator_close(void);
 void vibrate(int);
 
 #endif

@@ -87,6 +87,9 @@ void do_init(void) {
 	qfprintf("/proc/sys/kernel/hotplug", "/bin/mdev");
 	system_logged("mdev -s");
 
+	logprintf("0initializing vibrator");
+	vibrator_open("/sys/devices/virtual/timed_output/vibrator/enable");
+
 	logprintf("0loading font file");
 	if (load_font("/t.fnt")) {
 		logprintf("3failed to load font");
