@@ -96,8 +96,8 @@ void do_init(void) {
 		exit(1);
 	}
 
-	logprintf("0initializing graphics");
 	for (i = 0; i < 5; ++i) {
+		logprintf("0initializing graphics (attempt %d)", i + 1);
 		if (!fb_init()) break;
 		usleep(300000);
 	}
@@ -115,8 +115,8 @@ void do_init(void) {
 	logprintf("0starting touchscreen service");
 	system_logged("tssrv >/var/tssrv.out 2>/var/tssrv.err &");
 
-	logprintf("0initializing touch screen");
 	for (i = 0; i < 5; ++i) {
+		logprintf("0initializing touch screen (attempt %d)", i + 1);
 		if (!ts_open(ts_name)) break;
 		usleep(400000);
 	}
