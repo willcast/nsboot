@@ -62,10 +62,37 @@ $(EXECUTABLE): $(OBJECTS)
 %.o: %.c $(HEADERS)
 	$(CC) -c $(CFLAGS) $< -o $@
 
-.PHONY: clean boot
+.PHONY: clean boot push_nsboot push_android push_android_recovery push_linux
 
 clean: 
 	rm -f $(IMAGE) $(UKERNEL) $(URAMDISK) $(RAMDISK) $(EXECUTABLE) $(OBJECTS)
 
+# this is temporary, after a boot/reboot the old bootloader will resume control
 boot: $(UIMAGE)
 	novacom boot mem:// < $(UIMAGE)
+
+# use at nsboot menu
+push_nsboot: $(UIMAGE)
+	adb push $(UIMAGE) /mnt/boot/uImage.nsboot
+	adb shell sync
+
+# use when running compatible Android ROM
+push_android: $(UIMAGE)
+	adb shell mkdir -p /boot
+	adb shell mount -o rw /dev/block/mmcblk0p13 /boot
+	adb push $(UIMAGE) /boot/uImage.nsboot
+	adb shell sync
+
+# use when running compatible Android recovery
+push_android_recovery: $(UIMAGE)
+	adb shell mount /boot
+	adb push $(UIMAGE) /boot/uImage.nsboot
+	adb shell sync
+
+# use when running compatible desktop Linux
+push_linux:
+	adb shell mount -o remount,rw /boot
+	adb push $(UIMAGE) /boot/uImage.nsboot
+	adb shell sync
+
+# pushing to webOS needs investigation as to how to put a file.

@@ -88,6 +88,18 @@ mode, and:
 (Obviously, you can only do that when you're cross compiling, which is why
 that's the best method.)
 
+To "push" (install) the built nsboot uImage onto the boot partition...
+...when at the nsboot menu:
+    make push_nsboot
+...when running a compatible* Android ROM
+    make push_android
+...when running a compatible* Android recovery
+    make push_android_recovery
+...when running a compatible* desktop Linux port
+    make push_linux
+
+* just try it, if there are errors, then it's incompatible.
+
 External programs used in the image:
 ------------------------------------
 All are linked statically, can be stripped, and go in the subdirectory named
