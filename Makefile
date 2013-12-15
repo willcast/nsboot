@@ -18,7 +18,7 @@
 #	You should have received a copy of the GNU General Public License
 #	along with nsboot.  If not, see <http://www.gnu.org/licenses/>
 
-CC := gcc
+CC ?= gcc
 CFLAGS := -D_GNU_SOURCE -std=gnu99 -Os -Wall -ggdb
 LDFLAGS := -static
 SOURCES := boot.c fb.c file.c init.c input.c install.c lib.c log.c lv.c \
