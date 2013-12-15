@@ -20,6 +20,7 @@
 	along with nsboot.  If not, see <http://www.gnu.org/licenses/>
 */
 
+#include <ctype.h>
 #include <fcntl.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -101,7 +102,6 @@ void check_keep_arg(char *arg) {
 void read_kb_file_from(char *lv) {
 	FILE *cfg_fp;
 	char line[128], path[PATH_MAX], *equals;
-	struct boot_item *entry;
 
 	strcpy(path, "/mnt/");
 	strcat(path, lv);
@@ -113,47 +113,82 @@ void read_kb_file_from(char *lv) {
 		return;
 	}
 
+	struct boot_item *entry = NULL;
+	int line_num = 1;
 	while (!(feof(cfg_fp) || ferror(cfg_fp))) {
+		char *start;
+
 		if (fgets(line, sizeof(line), cfg_fp) == NULL) {
 			fclose(cfg_fp);
 			return;
 		}
 
+		start = line;
+		// ignore leading white space
+		while (isspace(*start)) ++start;
+
 		// ignore comments
-		if (line[0] == '#') continue;
+		if (start[0] == '#') continue;
 
 		// strip newline char
-		equals = strchr(line, '\n');
+		equals = strchr(start, '\n');
 		if (equals != NULL) *equals = '\0';
 
-		equals = strchr(line, '=');
-		// ignore invalid lines
+		equals = strchr(start, '=');
+		// ignore invalid lines (without equal sign)
 		if (equals == NULL) continue;
 
 		*equals = '\0';
 		++equals;
 
-		// 'equals' should now point to the value
-
-		if (!strcmp(line, "LABEL")) {
+		// 'equals' should now point to the right side value
+	
+		if (!strcasecmp(start, "LABEL")) {
 			entry = add_boot_item(equals);
 			entry->cfgdev = strdup(lv);
-		} else if (!strcmp(line, "KERNEL")) {
-			strcpy(path, "/mnt/");
-			strcat(path, lv);
-			strcat(path, equals);
-			entry->kernel = strdup(path);
- 		} else if (!strcmp(line, "INITRD")) {
-			strcpy(path, "/mnt/");
-			strcat(path, lv);
-			strcat(path, equals);
-			entry->initrd = strdup(path);
-		} else if (!strcmp(line, "APPEND"))
-			strcat(entry->append, equals);
-		else if (!strcmp(line, "PRIORITY"))
-			entry->prio = atoi(equals);
-		else
-			continue;
+		} 
+
+		// other directives only make sense after LABEL
+		if (entry != NULL) {
+			if (!strcasecmp(start, "KERNEL")) {
+				char tmp_path[PATH_MAX];
+
+				strncpy(tmp_path, "/mnt/", sizeof(tmp_path));
+				strncat(tmp_path, lv, sizeof(tmp_path));
+				strncat(tmp_path, equals, sizeof(tmp_path));
+				entry->kernel = strdup(tmp_path);
+ 			} else if (!strcasecmp(start, "INITRD")) {
+				char tmp_path[PATH_MAX];
+
+				strncpy(tmp_path, "/mnt/", sizeof(tmp_path));
+				strncat(tmp_path, lv, sizeof(tmp_path));
+				strncat(tmp_path, equals, sizeof(tmp_path));
+				entry->initrd = strdup(tmp_path);
+			} else if (!strcasecmp(start, "APPEND")) {
+				strncat(entry->append, equals,
+					sizeof(entry->append));
+			} else if (!strcasecmp(start, "PRIORITY")) {
+				char *endptr;
+				entry->prio = (int)strtol(equals, &endptr, 10);
+				if (*endptr != '\0') {
+					logprintf("1non-numeric PRIORITY value, line %d, file %s",
+						line_num, path);
+					entry->prio = 0;
+				}
+			} else if (!strcasecmp(start, "LABEL")) {
+				// already handled above
+				continue;
+			} else {
+				logprintf("1unknown config directive '%s', line %d, file %s",
+					line, line_num, path);
+				continue;
+			}
+		} else {
+			logprintf("1LABEL must be set first but wasm't, line %d, file %s",
+				line_num, path);
+		}
+
+		++line_num;
 	}
 	fclose(cfg_fp);
 }
