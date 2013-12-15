@@ -49,7 +49,8 @@ void parse_proc_cmdline(void) {
 	int cmdline_fd;
 	int nchars;
 
-	char cmdline[PROC_CMDLINE_MAX], *cur_arg;
+	char cmdline[PROC_CMDLINE_MAX];
+	char *cur_arg;
 
 	kept_cmdline = malloc(PROC_CMDLINE_MAX);
 	kept_cmdline[0] = '\0';
@@ -254,9 +255,7 @@ void boot_kexec(int entry_num) {
 	}
 
 	mount_lv(entry->cfgdev);
-	snprintf(cmd, sizeof(cmd), "mount -o remount,ro %s", entry->cfgdev);
-	if (code = WEXITSTATUS(system(cmd)))
-		logprintf("1can't remount read only, code %d", code);
+	sysprintf("mount -o remount,ro %s", entry->cfgdev);
 
 	strcpy(cmd, "kexec --load-hardboot --mem-min=0x48000000 --mem-max=0x4FFFFFFF ");
 	if (entry->initrd != NULL) {
@@ -274,10 +273,7 @@ void boot_kexec(int entry_num) {
 	strcat(cmd, "'");
 
 	logprintf("0loading kexec kernel");
-	if (code = WEXITSTATUS(system(cmd))) {
-		logprintf("2error loading kernel, code %d", code);
-		return;
-	}
+	system_logged(cmd);
 
 	umount_lv(entry->cfgdev);
 
@@ -285,8 +281,7 @@ void boot_kexec(int entry_num) {
 	do_shutdown();
 
 	logprintf("0booting kernel");
-	if (WEXITSTATUS(system("kexec --exec")))
-		logprintf("2error calling kexec");
+	system_logged("kexec --exec");
 
 	logprintf("3kexec failed!");
 	exit(1);

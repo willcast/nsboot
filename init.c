@@ -51,47 +51,41 @@ void do_init(void) {
 	init_log();
 	logprintf("0welcome to nsboot");
 
-	logprintf("0mounting virtual filesystems");
-
+	logprintf("0mounting /dev");
 	mkdir("/dev", 0755);
-	logprintf("0 - /dev");
 	mount("tmpfs", "/dev", "tmpfs", MS_SILENT, NULL);
 
-	mkdir("/dev/pts", 0755);
-	logprintf("0 - /dev/pts");
-	mount("none", "/dev/pts", "devpts", MS_SILENT, NULL);
-
+	logprintf("0mounting /proc");
 	mkdir("/proc", 0755);
-	logprintf("0 - /proc");
 	mount("none", "/proc", "proc", MS_SILENT, NULL);
-
-	mkdir("/sys", 0755);
-	logprintf("0 - /sys");
-	mount("none", "/sys", "sysfs", MS_SILENT, NULL);
-
-	logprintf("0disabling kernel messages");
-	qfprintf("/proc/sys/kernel/printk", "2");
 
 	logprintf("0enabling core dumps");
 	enable_coredumps();
 
-	logprintf("0parsing /proc/cmdline");
+	logprintf("0quieting kernel messages");
+	qfprintf("/proc/sys/kernel/printk", "2");
+
+	logprintf("0parsing kernel cmdline");
 	parse_proc_cmdline();
 
 	logprintf("0installing busybox");
-	if (code = WEXITSTATUS(system("busybox --install -s"))) {
-		logprintf("3busybox install failed with code %d", code);
-		exit(1);
-	}
+	system_logged("busybox --install -s");
 
 	logprintf("0symlinking binaries");
 	symlink_binaries();
 
+	logprintf("0mounting /sys");
+	mkdir("/sys", 0755);
+	mount("none", "/sys", "sysfs", MS_SILENT, NULL);
+
+	logprintf("0mounting /dev/pts");
+	mkdir("/dev/pts", 0755);
+	mount("none", "/dev/pts", "devpts", MS_SILENT, NULL);
+
 	logprintf("0starting hotplug");
-	code = system("touch /etc/mdev.conf");
+	system_logged("touch /etc/mdev.conf");
 	qfprintf("/proc/sys/kernel/hotplug", "/bin/mdev");
-	if (code = WEXITSTATUS(system("mdev -s")))
-		logprintf("2hotplug failed with code %d", code);
+	system_logged("mdev -s");
 
 	logprintf("0loading font file");
 	if (load_font("/t.fnt")) {
@@ -111,15 +105,11 @@ void do_init(void) {
 	}
 	atexit(fb_close);
 
-	set_brightness(64);
-
+	set_brightness(48);
 	start_adbd();
 
 	logprintf("0starting touchscreen service");
-	if (code = WEXITSTATUS(system("tssrv >/var/tssrv.out 2>/var/tssrv.err &"))) {
-		logprintf("3tssrv failed to start, code %d");
-		exit(1);
-	}
+	system_logged("tssrv >/var/tssrv.out 2>/var/tssrv.err &");
 
 	for (i = 0; i < 5; ++i) {
 		logprintf("0initializing touch screen - attempt %d", i);
@@ -145,9 +135,9 @@ void do_init(void) {
 	mount("/dev/mmcblk0p13", "/mnt/boot", "ext4", MS_SILENT, NULL);
 
 	logprintf("0starting lvm");
-	code = system("rm -rf /etc/lvm/cache");
-	code = system("lvm vgchange -a y");
-	code = system("lvm vgmknodes");
+	system_logged("rm -rf /etc/lvm/cache");
+	system_logged("lvm vgchange -a y");
+	system_logged("lvm vgmknodes");
 
 	logprintf("0mounting base volumes");
 	mount_lv("media");
@@ -159,12 +149,10 @@ void do_init(void) {
 }
 
 void do_shutdown(void) {
-	int code;
-
 	logprintf("0stopping tssrv");
-	code = system("killall tssrv");
+	system_logged("killall tssrv");
 
-	code = system("killall adbd");
+	system_logged("killall adbd");
 	qfprintf("/sys/class/usb_composite/adb/enable", "0");
 	qfprintf("/sys/class/usb_composite/rndis/enable", "0");
 
@@ -186,7 +174,7 @@ void do_shutdown(void) {
 	qfprintf("/sys/devices/platform/cy8ctma395/vdd", "0");
 
 	logprintf("0unmounting all volumes");
-	code = chdir("/");
+	(void)chdir("/");
 	sync();
 	qfprintf("/proc/sysrq-trigger", "u");
 
@@ -239,13 +227,12 @@ void enable_coredumps(void) {
 void start_adbd(void) {
 	int code;
 
-	logprintf("0stopping adbf");
-	code = system("killall adbd");
+	logprintf("0stopping adbd");
+	system_logged("killall adbd");
 
 	logprintf("0starting adbd");
 	qfprintf("/sys/class/usb_composite/adb/enable", "1");
 	qfprintf("/sys/class/usb_composite/rndis/enable", "1");
 	chmod("/dev/android_adb", 0777);
-	if (code = WEXITSTATUS(system("adbd >/var/adbd.log 2>/var/adbd.err &")))
-		logprintf("2adbd failed to start, code %d");
+	system_logged("adbd >/var/adbd.log 2>/var/adbd.err &");
 }

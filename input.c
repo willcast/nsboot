@@ -46,11 +46,13 @@ void ts_close(void) {
 }
 
 void ts_read(int *x, int *y) {
-	int ts_x, ts_y, ts_id, ts_maj, ts_syn = 0, nbytes;
+	int ts_x = -1, ts_y = -1;
+	int ts_id = 0, ts_maj = 0, ts_syn = 0;
+	int nbytes;
 	struct input_event ev;
-	static struct timeval ts_time, ts_last_time = {0,0}, ts_diff_time;
 
-	while ((ts_maj != 0) || (ts_id != 1) || (!ts_syn)) {
+	while ((ts_maj != 0) || (ts_id != 1) || (!ts_syn)
+		|| (ts_x == -1) || (ts_y == -1)) {
 		nbytes = read(ts_fd, &ev, sizeof(struct input_event));
 		if (nbytes != sizeof(struct input_event)) {
 			perror("can't read touchscreen");

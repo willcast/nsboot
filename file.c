@@ -160,7 +160,6 @@ int cmp_ext(char *file, char *ext) {
 }
 
 int cmp_base(char *file, char *base) {
-	int ret;
 	return strncasecmp(file, base, strchr(file, '.') - file - 1);
 }
 
@@ -219,9 +218,7 @@ void copy_file(const char *srcpath, const char *destpath) {
 	logprintf("0 from: %s", srcpath);
 	logprintf("0 to: %s", destpath);
 
-	snprintf(cmd, sizeof(cmd), "cp -rf %s %s", srcpath, destpath);
-	if (code = WEXITSTATUS(system(cmd)))
-		logprintf("2cp invocation failed with code %d", code);
+	sysprintf("cp -rf %s %s", srcpath, destpath);
 }
 
 void move_file(const char *srcpath, const char *destpath) {
@@ -234,9 +231,7 @@ void move_file(const char *srcpath, const char *destpath) {
 	logprintf("0 from: %s", srcpath);
 	logprintf("0 to: %s", destpath);
 
-	snprintf(cmd, sizeof(cmd), "mv %s %s", srcpath, destpath);
-	if (code = WEXITSTATUS(system(cmd)))
-		logprintf("2mv invocation failed with code %d", code);
+	sysprintf("mv %s %s", srcpath, destpath);
 }
 
 int file_mode(int num) {

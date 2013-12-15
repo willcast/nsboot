@@ -28,6 +28,7 @@
 
 #include <linux/fb.h>
 
+#include <sys/ioctl.h>
 #include <sys/mman.h>
 
 #include "fb.h"
@@ -173,7 +174,7 @@ void text(const char *str, int x, int y, int zx, int zy, uint32_t fgc, uint32_t 
 	  } else {
             for (int cy = 0; cy < 16*zx; ++cy)
 	      for (int cx = 0; cx < 8*zx; ++cx) {
-	       uint32_t colr = font[zx][cx][cy][str[ch]] ? fgc : bgc;
+	       uint32_t colr = font[zx][cx][cy][(int)str[ch]] ? fgc : bgc;
 //               for (int px = 0; px < zx; ++px)
   //               for (int py = 0; py < zx; ++py)
                  put_pixel(x+ox+cx,y+oy+cy, colr);

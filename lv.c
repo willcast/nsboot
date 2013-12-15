@@ -46,10 +46,7 @@ void mount_lv(const char *lv) {
 	mkdir(cmd, 0755);
 
 	type = get_lv_fstype(lv);
-	snprintf(cmd, sizeof(cmd), "mount -t %s /dev/store/%s /mnt/%s", type, lv, lv);
-	code = WEXITSTATUS(system(cmd));
-	if (code && (code != 255))
-		logprintf("2mount command failed with code %d", code);
+	sysprintf("mount -t %s /dev/store/%s /mnt/%s", type, lv, lv);
 }
 
 // /proc/mounts displays the real device location, not the symbolic
@@ -125,8 +122,7 @@ void wipe_lv(const char *lv) {
 
 	logprintf("0making %s filesystem on volume %s", type, lv);
 
-	if (code = WEXITSTATUS(system(cmd)))
-		logprintf("2mkfs invocation failed with exit code %d", code);
+	system_logged(cmd);
 }
 
 void delete_lv(const char *lv) {
@@ -142,9 +138,7 @@ void delete_lv(const char *lv) {
 
 	umount_lv(lv);
 
-	sprintf(cmd, "lvm lvremove -f store/%s", lv);
-	if (code = WEXITSTATUS(system(cmd)))
-		logprintf("2lvremove invocation failed with exit code %d", code);
+	sysprintf("lvm lvremove -f store/%s", lv);
 }
 
 void new_lv(const char *lv, const  long size_mb) {
@@ -161,9 +155,7 @@ void new_lv(const char *lv, const  long size_mb) {
 
 	logprintf("0creating a volume named %s with a size of %ld MiB",
 		lv, size_mb);
-	sprintf(cmd, "lvm lvcreate -n %s -L %ld'M' store", lv, size_mb);
-	if (code = WEXITSTATUS(system(cmd)))
-		logprintf("2lvcreate invocation failed with exit code %d", code);
+	sysprintf("lvm lvcreate -n %s -L %ld'M' store", lv, size_mb);
 }
 
 int lv_exists(const char *lv) {
@@ -255,41 +247,19 @@ void resize_lv(const char *lv, enum resizemode mode, long arg) {
 	umount_lv(lv);
 	check_lv(lv);
 
-	if (newsize > oldsize) {
-		sprintf(cmd, "lvm lvresize -fL %ld'M' store/%s", newsize, lv);
-		if (code = WEXITSTATUS(system(cmd))) {
-			logprintf("2lvresize invocation failed with code %d", code); 
-			return;
-                }
-	}
+	if (newsize > oldsize)
+		sysprintf("lvm lvresize -fL %ld'M' store/%s", newsize, lv);
 
 	if (!strcmp(type, "vfat") || !strcmp(type, "msdos")) {
 		logprintf("0%s","resizing FAT filesystem");
-		sprintf(cmd, "resizefat /dev/store/%s %ld'M'", lv, newsize);
-		if (code = WEXITSTATUS(system(cmd))) {
-        	        logprintf("2resizefat invocation failed with code %d", code);
-	                return;
-        	}
+		sysprintf("resizefat /dev/store/%s %ld'M'", lv, newsize);
 	} else if (!strncmp(type, "ext", 3)) {
 		logprintf("0resizing %s filesystem", type);
-		sprintf(cmd, "resize2fs /dev/store/%s %ld'M'", lv, newsize);
-		code = WEXITSTATUS(system(cmd));
-
-		// nobody seems to have documented 134 but the fs size changes and
-		// no errors are found by e2fsck so I assume it is benign.
-		if (code && (code != 134)) {
-			logprintf("2resize2fs invocation failed with code %d", code);
-			return;
-		}
+		sysprintf("resize2fs /dev/store/%s %ld'M'", lv, newsize);
 	}
 
-	if (newsize < oldsize) {
-		sprintf(cmd, "lvm lvresize -fL %ld'M' store/%s", newsize, lv);
-		if (code = WEXITSTATUS(system(cmd))) {
-			logprintf("2lvresize invocation failed with code %d", code); 
-			return;
-                }
-	}
+	if (newsize < oldsize)
+		sysprintf("lvm lvresize -fL %ld'M' store/%s", newsize, lv);
 
 	if (!strcmp(type, "swap")) wipe_lv(lv);
 
@@ -363,12 +333,8 @@ void lv_to_tgz(const char *lv, const char *bname) {
 		return;
 	}
 
-	snprintf(cmd, sizeof(cmd),
-		 "tar --numeric-owner -czpf /mnt/media/nsboot/backups/%s.tar.gz .",
+	sysprintf("tar --numeric-owner -czpf /mnt/media/nsboot/backups/%s.tar.gz .",
 		bname);
-
-	if (code = WEXITSTATUS(system(cmd)))
-		logprintf("2tar creation failed with code %d", code);
 }
 
 char * get_lv_fstype(const char *lv) {

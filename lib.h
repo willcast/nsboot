@@ -23,11 +23,18 @@
 #ifndef NSBOOT_LIB_H
 #define NSBOOT_LIB_H
 
+#define BUF_SIZE 65536
+
 void qfprintf(const char *, const char *, ...);
 void qfscanf(const char *, const char *, ...);
 void qpscanf(const char *, const char *, ...);
 int hexval(char);
+
 int test_file(const char *);
+void cp_file(const char *, const char *);
+
+void system_logged(char *);
+void sysprintf(const char *, ...);
 
 #define array_size(x) (sizeof(x) / sizeof(*(x)))
 #define max(a,b) (((a) > (b)) ? (a) : (b))

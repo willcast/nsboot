@@ -68,10 +68,8 @@ void install_native(const char *tarname, const char *lv, int size) {
 	if (chdir(cmd) == -1)
 		logperror("can't chdir into target root");
 
-	snprintf(cmd, sizeof(cmd), "tar -xzpf %s", tarname);
 	logprintf("0extracting .tar.gz file, this may take 10+ minutes");
-	if (code = WEXITSTATUS(system(cmd)))
-		logprintf("2extraction failed with exit code %d", code);
+	sysprintf("tar -xzpf %s", tarname);
 }
 
 void install_android(const char *zipname, const char *base, int flags) {
@@ -112,32 +110,25 @@ void install_android(const char *zipname, const char *base, int flags) {
 	if (chdir(cmd) == -1)
 		logperror("chdir into root of new install");
 
-	snprintf(cmd, sizeof(cmd), "unzip -qo %s", zipname);
 	logprintf("0extracting zip file");
-	if (code = WEXITSTATUS(system(cmd)))
-		logprintf("2unzipping failed with exit code %d", code);;
+	sysprintf("unzip -qo %s", zipname);
 
 	snprintf(cmd, sizeof(cmd), "/mnt/%s/system/etc/firmware/q6.mdt", base);
 	if (!test_file(cmd)) {
 		mount_lv("firmware");
 		logprintf("0copying firmware");
-		snprintf(cmd, sizeof(cmd),
-			"cp /mnt/firmware/IMAGE/* /mnt/%s/system/etc/firmware",
+		sysprintf("cp /mnt/firmware/IMAGE/* /mnt/%s/system/etc/firmware",
 			base);
-		if (code = WEXITSTATUS(system(cmd)))
-			logprintf("2firmware copy failed with code %d", code);
 	}
 
 	// convert update script into shell script and run it
 	logprintf("0converting updater script");
-	if (code = WEXITSTATUS(system(update_str)))
-		logprintf("2conversion pipeline failed with code %d", code);
+	system_logged(update_str);
 	logprintf("0running updater script");
 
 	if (!is_lv_mounted("root")) mount_lv("root");
 	chmod("updatescript", 0755);
-	if (code = WEXITSTATUS(system("bash updatescript")))
-		logprintf("0updater script exited with code %d", code);
+	system_logged("bash updatescript");
 
 	snprintf(cmd, sizeof(cmd), "/mnt/%s/boot.img", base);
 	if (test_file(cmd) && (flags & INST_MOBOOT)) {
@@ -145,61 +136,43 @@ void install_android(const char *zipname, const char *base, int flags) {
 			"/mnt/%s/moboot.splash.CyanogenMod.tga", base);
 		if (test_file(cmd)) {
 			logprintf("0installing moboot splash");
-			snprintf(cmd, sizeof(cmd),
-				"cp moboot.splash.CyanogenMod.tga "
+			sysprintf("cp moboot.splash.CyanogenMod.tga "
 				"/mnt/boot/moboot.splash.%s.tga",
 				base);
-			if (code = WEXITSTATUS(system(cmd)))
-				logprintf("2splash copy failed with code %d", code);
 		}
 
 		logprintf("0patching uImage");
-		if (code = WEXITSTATUS(system("uimage-extract boot.img")))
-			logprintf("2uImage extraction failed with code %d",
-				code);
-		if (code = WEXITSTATUS(system("mv ramdisk.img ramdisk.gz")))
-			logprintf("2renaming of ramdisk failed with code %d",
-				code);
-		if (code = WEXITSTATUS(system("gunzip ramdisk.gz")))
-			logprintf("2ramdisk gunzipping failed with code %d",
-				code);
+		system_logged("uimage-extract boot.img");
+		system_logged("mv ramdisk.img ramdisk.gz");
+		system_logged("gunzip ramdisk.gz");
 
 		mkdir("extracted", 0755);
 		if (chdir("extracted") == -1)
 			logperror("error changing directory into extraction "
 				" area");
-		if (code = WEXITSTATUS(system("cpio -i < ../ramdisk")))
-			logprintf("2extraction of ramdisk failed with code %d",
-				code);
+		system_logged("cpio -i < ../ramdisk");
 
-		snprintf(cmd, sizeof(cmd), "sed -i -e 's/cm-system/%s-system/'"
+		sysprintf("sed -i -e 's/cm-system/%s-system/'"
 			" -e 's/cm-data/%s-data/' -e 's/cm-cache/%s-cache/' "
 			"init.tenderloin.rc", base, base, base);
-		if (code = WEXITSTATUS(system(cmd)))
-			logprintf("2init script patching failed with code %s",
-				code);
-		if (code = WEXITSTATUS(system("find . | cpio -o --format=newc "
-			"| lzma > ../ramdisk")))
-			logprintf("2repacking of ramdisk failed with code %d",
-				code);
+
+		system_logged("find . | cpio -o --format=newc | lzma > ../ramdisk");
 
 		if (chdir("..") == -1)
 			logperror("changing into parent directory failed");
-		if (code = WEXITSTATUS(system("mkimage -A arm -O linux -T "
-			"kernel -C none -a 0x40208000 -e 0x40208000 -n kernel"
-			" -d kernel.img uKernel")))
-			logprintf("2mkimage for kernel failed with code %d", code);
-		if (code = WEXITSTATUS(system("mkimage -A arm -O linux -T "
-			"ramdisk -C none -a 0x60000000 -e 0x60000000 -n "
-			"ramdisk -d ramdisk uRamdisk")))
-			logprintf("2mkimage for ramdisk failed with code %d", code);
-		if (code = WEXITSTATUS(system("mkimage -A arm -O linux -T multi -C "
-	"none -a 0x40208000 -e 0x6000000 -n multi -d uKernel:uRamdisk uImage")))
-			logprintf("2mkimage for multi image failed with code %d", code);
 
-		snprintf(cmd, sizeof(cmd), "mv uImage /mnt/boot/uImage.%s", base);
-		if (code = WEXITSTATUS(system(cmd)))
-			logprintf("2installation of patched uImage failed with code %d", code);
+		system_logged("mkimage -A arm -O linux -T kernel -C none "
+			"-a 0x40208000 -e 0x40208000 -n kernel -d kernel.img "
+			"uKernel");
+		system_logged("mkimage -A arm -O linux -T ramdisk -C none "
+			"-a 0x60000000 -e 0x60000000 -n nsboot_patched_ramdisk "
+			"-d ramdisk uRamdisk");
+		system_logged("mkimage -A arm -O linux -T multi -C none "
+			"-a 0x40208000 -e 0x40208000 -n nsboot_patched_multi "
+			"-d uKernel:uRamdisk uImage");
+
+		sysprintf("mv uImage /mnt/boot/uImage.%s", base);
+
 		unlink("kernel.img");
 		unlink("ramdisk");
 		unlink("uImage");
@@ -227,13 +200,10 @@ void install_tar(const char *file, const char *instlv) {
 	FILE *cfg_fp;
 
 	logprintf("0installing kexec .tar file %s", file);
-	if (code = WEXITSTATUS(system("rm -rf /mnt/tar")))
-		logprintf("2cleaning of work area failed with code %d", code);
+	system_logged("rm -rf /mnt/tar");
 	mkdir("/mnt/tar", 0755);
 
-	snprintf(cmd, sizeof(cmd), "tar -xf %s -C /mnt/tar", file);
-	if (code = WEXITSTATUS(system(cmd)))
-		logprintf("2untarring failed with code %d", code);
+	sysprintf("tar -xf %s -C /mnt/tar", file);
 
 	cfg_fp = fopen("/mnt/tar/smackme.cfg", "r");
 	if (cfg_fp == NULL) return;
@@ -242,8 +212,9 @@ void install_tar(const char *file, const char *instlv) {
 
 	logperror("fgets on smackme.cfg failed");
 	fclose(cfg_fp);
-	// chomp newline
-	// otherwise cp messes up in truly bizarre ways
+
+	// chomp newline...
+	// otherwise cp messes up in truly bizarre ways!
 	lv = strchr(line, '\n');
 	*lv = '\0';
 
@@ -256,8 +227,7 @@ void install_tar(const char *file, const char *instlv) {
 
 	if (instlv != NULL) {
 		logprintf("1changing root LV from %s to %s", lv, instlv);
-		snprintf(cmd, sizeof(cmd), "sed -ie 's/%s/%s/' /mnt/tar/boot.cfg", lv, instlv);
-		code = WEXITSTATUS(system(cmd));
+		sysprintf("sed -ie 's/%s/%s/' /mnt/tar/boot.cfg", lv, instlv);
 
 		lv = strdup(instlv);
 	}
@@ -267,10 +237,7 @@ void install_tar(const char *file, const char *instlv) {
 	sprintf(cmd, "/mnt/%s/boot", lv);
 	mkdir(cmd, 0755);
 
-	sprintf(cmd, "cp -f /mnt/tar/* /mnt/%s/boot/", lv);
-
-	if (code = WEXITSTATUS(system(cmd)))
-		logprintf("2copy of archive contents failed with code %d", code);
+	sysprintf("cp -f /mnt/tar/* /mnt/%s/boot/", lv);
 }
 
 void install_uimage(char *file) {
@@ -286,11 +253,7 @@ void install_uimage(char *file) {
 	if (dot == NULL) return;
 	++dot;
 
-	sprintf(cmd, "cp %s /mnt/boot", file);
-	if (code = WEXITSTATUS(system(cmd))) {
-		logprintf("2uImage copy failed with code %d", code);
-		return;
-	}
+	sysprintf("cp %s /mnt/boot", file);
 
 	sprintf(cmd, "/mnt/boot/moboot.verbose.%s", dot);
 	qfprintf(cmd, "yes");
@@ -313,15 +276,17 @@ void replace_moboot(void) {
 		return;
 	}
 
-	if (code = WEXITSTATUS(system("mv uImage uImage.old"))) {
-		logprintf("2relocation of old bootloader failed with code %d", code);
+	system_logged("mv uImage uImage.old");
+
+	if (test_file("uImage") || !test_file("uImage.old")) {
+		logprintf("2relocation of old bootloader failed!");
 		logprintf("3%s", "WARNING: YOU MAY NEED TO USE NOVACOM TO REINSTALL A BOOTLOADER");
 		sleep(1);
 		return;
 	}
 
 	if (symlink("uImage.nsboot", "uImage") == -1) {
-		logperror("error symlinking nsboot as main bootloader");
+		logperror("error symlinking nsboot as main bootloader!");
 		logprintf("3%s", "WARNING: YOU MAY NEED TO USE NOVACOM TO REINSTALL A BOOTLOADER");
 		sleep(1);
 	}

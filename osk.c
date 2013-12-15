@@ -21,7 +21,9 @@
 */
 
 #include <stdlib.h>
+#include <string.h>
 
+#include "fb.h"
 #include "input.h"
 #include "log.h"
 

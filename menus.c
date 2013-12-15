@@ -498,8 +498,7 @@ int misc_menu(void) {
 			}
 			cmd = text_input(pwd);
 			if ((cmd == NULL) || (cmd[0] == '\0')) continue;
-			if (code = WEXITSTATUS(system(cmd)))
-				logprintf("2your shell command exited with code %d", code);
+			system_logged(cmd);
 			free(cmd);
 		} else if (PRESSED(displog)) display_wholelog();
 		else if (PRESSED(dumplog)) {
