@@ -219,10 +219,17 @@ void enable_coredumps(void) {
 	setrlimit(RLIMIT_CORE, &unlim);
 }
 
-void start_adbd(void) {
+void restart_adbd(void) {
+	stop_adbd();
+	start_adbd();
+}
+
+void stop_adbd(void) {
 	logprintf("0stopping adbd");
 	system_logged("killall adbd");
+}
 
+void start_adbd(void) {
 	logprintf("0starting adbd");
 	qfprintf("/sys/class/usb_composite/adb/enable", "1");
 	qfprintf("/sys/class/usb_composite/rndis/enable", "1");
