@@ -93,32 +93,32 @@ void do_init(void) {
 		exit(1);
 	}
 
+	logprintf("0initializing graphics");
 	for (i = 0; i < 5; ++i) {
-		logprintf("0initializing graphics - attempt %d", i);
 		if (!fb_init()) break;
-		logprintf("2 - attempt failed!");
-		usleep(250000);
+		usleep(300000);
 	}
 	if (i == 5) {
-		logprintf("3giving up on FB!");
+		logprintf("3failed to init graphics!");
 		exit(1);
 	}
 	atexit(fb_close);
 
+	logprintf("0reducing display brightness");
 	set_brightness(48);
+
 	start_adbd();
 
 	logprintf("0starting touchscreen service");
 	system_logged("tssrv >/var/tssrv.out 2>/var/tssrv.err &");
 
+	logprintf("0initializing touch screen");
 	for (i = 0; i < 5; ++i) {
-		logprintf("0initializing touch screen - attempt %d", i);
 		if (!ts_open(ts_name)) break;
-		logprintf("2 - attempt failed!");
 		usleep(400000);
 	}
 	if (i == 5) {
-		logprintf("3giving up on TS!");
+		logprintf("3failed to init TS!");
 		exit(1);
 	}
 	atexit(ts_close);
