@@ -48,12 +48,13 @@ void do_init(void) {
 	init_log();
 	logprintf("0welcome to nsboot");
 
+	logprintf("0rebuilding root filesystem");
+	rebuild_fs();
+
 	logprintf("0mounting /dev");
-	mkdir("/dev", 0755);
 	mount("tmpfs", "/dev", "tmpfs", MS_SILENT, NULL);
 
 	logprintf("0mounting /proc");
-	mkdir("/proc", 0755);
 	mount("none", "/proc", "proc", MS_SILENT, NULL);
 
 	logprintf("0enabling core dumps");
@@ -72,7 +73,6 @@ void do_init(void) {
 	symlink_binaries();
 
 	logprintf("0mounting /sys");
-	mkdir("/sys", 0755);
 	mount("none", "/sys", "sysfs", MS_SILENT, NULL);
 
 	logprintf("0mounting /dev/pts");
@@ -120,12 +120,10 @@ void do_init(void) {
 
 	logprintf("0mounting base partitions");
 
-	mkdir("/mnt/firmware", 0755);
 	logprintf("0 - /mnt/firmware (/dev/mmcblk0p1)");
 	mount("/dev/mmcblk0p1", "/mnt/firmware", "vfat",
 		MS_RDONLY | MS_SILENT, NULL);
 
-	mkdir("/mnt/boot", 0755);
 	logprintf("0 - /mnt/boot (/dev/mmcblk0p13)");
 	mount("/dev/mmcblk0p13", "/mnt/boot", "ext4", MS_SILENT, NULL);
 
@@ -139,6 +137,9 @@ void do_init(void) {
 	mkdir("/mnt/media/nsboot", 0755);
 	if (chdir("/mnt/media") == -1)
 		logperror("can't chdir into /mnt/media");
+
+	logprintf("0mounting /tmp");
+	mount("tmpfs", "/tmp", "tmpfs", MS_SILENT, NULL);
 
 	mount_lv("root");
 }
@@ -208,6 +209,28 @@ void symlink_binaries(void) {
 		logperror("symlink gzip failed");
 }
 
+void rebuild_fs(void) {
+	mkdir("/dev", 0755);
+	mkdir("/etc", 0755);
+	mkdir("/mnt", 0755);
+	mkdir("/mnt/boot", 0755);
+	mkdir("/mnt/firmware", 0755);
+	mkdir("/proc", 0755);
+	mkdir("/sys", 0755);
+	mkdir("/tmp", 0755);
+	mkdir("/usr", 0755);
+	mkdir("/var", 0755);
+	
+	if (symlink("/", "/system") == -1)
+		logperror("symlink /system failed");
+	if (symlink("/bin", "/sbin") == -1)
+		logperror("symlink /sbin failed");
+	if (symlink("/bin", "/usr/bin") == -1)
+		logperror("symlink /usr/bin failed");
+	if (symlink("/sbin", "/usr/sbin") == -1)
+		logperror("symlink /usr/sbin failed");
+}
+
 void enable_coredumps(void) {
 	struct rlimit unlim;
 
@@ -236,3 +259,4 @@ void start_adbd(void) {
 	chmod("/dev/android_adb", 0777);
 	system_logged("adbd >/var/adbd.log 2>/var/adbd.err &");
 }
+

@@ -28,6 +28,8 @@ void do_cleanup(void);
 void do_shutdown(void);
 
 void symlink_binaries(void);
+void rebuild_fs(void);
+
 void enable_coredumps(void);
 
 void start_adbd(void);
