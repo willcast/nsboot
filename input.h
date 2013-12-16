@@ -48,7 +48,7 @@ extern input_state last_input;
 extern input_state cur_input;
 extern input_state diff_input;
 
-int input_open(void);
+int input_open(char *);
 void input_close(void);
 char * name_to_event_dev(char *);
 

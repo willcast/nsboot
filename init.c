@@ -39,7 +39,9 @@
 #include "lv.h"
 
 void do_init(void) {
-	int code, i;
+	int i;
+	int need_mdev = 0;
+	char uinput_dir[PATH_MAX];
 
 	atexit(do_cleanup);
 
@@ -51,8 +53,15 @@ void do_init(void) {
 	logprintf("0rebuilding root filesystem");
 	rebuild_fs();
 
-	logprintf("0mounting /dev");
-	mount("tmpfs", "/dev", "tmpfs", MS_SILENT, NULL);
+	logprintf("0mounting /dev (devtmpfs)");
+	if (mount("devtmpfs", "/dev", "devtmpfs", MS_SILENT, NULL) == -1) {
+		logperror("error mounting /dev as devtmpfs");
+		logprintf("0retrying /dev mount with plain tmpfs");
+		if (mount("tmpfs", "/dev", "tmpfs", MS_SILENT, NULL) == -1)
+			logperror("error mounting /dev/ as tmpfs");
+	
+		need_mdev = 1;
+	}	
 
 	logprintf("0mounting /proc");
 	mount("none", "/proc", "proc", MS_SILENT, NULL);
@@ -79,10 +88,12 @@ void do_init(void) {
 	mkdir("/dev/pts", 0755);
 	mount("none", "/dev/pts", "devpts", MS_SILENT, NULL);
 
-	logprintf("0starting hotplug");
-	system_logged("touch /etc/mdev.conf");
-	qfprintf("/proc/sys/kernel/hotplug", "/bin/mdev");
-	system_logged("mdev -s");
+	if (need_mdev) {
+		logprintf("0starting legacy hotplug (mdev)");
+		system_logged("touch /etc/mdev.conf");
+		qfprintf("/proc/sys/kernel/hotplug", "/bin/mdev");
+		system_logged("mdev -s");
+	}
 
 	logprintf("0initializing vibrator");
 	vibrator_open("/sys/devices/virtual/timed_output/vibrator/enable");
@@ -112,7 +123,12 @@ void do_init(void) {
 	logprintf("0starting touchscreen service");
 	system_logged("tssrv >/var/tssrv.out 2>/var/tssrv.err &");
 
-	if (input_open()) {
+	if (need_mdev)
+		strcpy(uinput_dir, "/dev");
+	else
+		strcpy(uinput_dir, "/dev/input");
+
+	if (input_open(uinput_dir)) {
 		logprintf("3failed to set up input!");
 		exit(1);
 	}

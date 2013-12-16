@@ -55,7 +55,7 @@ input_state last_input;
 input_state cur_input;
 input_state diff_input;
 
-int input_open(void) {
+int input_open(char *uinput_dir) {
 	char dev_path[PATH_MAX];
 	char *dev_name = NULL;
 	int attempt;
@@ -70,7 +70,7 @@ int input_open(void) {
 	if (attempt == 5) {
 		logprintf("3unable to detect touch screen!");
 	} else {
-		snprintf(dev_path, sizeof(dev_path), "/dev/%s", dev_name);
+		snprintf(dev_path, sizeof(dev_path), "%s/%s", uinput_dir, dev_name);
 		free(dev_name);
 		logprintf("0trying to open touch screen at %s", dev_path);
 		if (!ts_open(dev_path)) 
@@ -81,7 +81,7 @@ int input_open(void) {
 	if (dev_name == NULL) {
 		logprintf("3unable to detect GPIO keys!");
 	} else {
-		snprintf(dev_path, sizeof(dev_path), "/dev/%s", dev_name);
+		snprintf(dev_path, sizeof(dev_path), "%s/%s", uinput_dir, dev_name);
 		free(dev_name);
 		logprintf("0trying to open GPIO keys at %s", dev_path);
 		if (!gpio_keys_open(dev_path))
@@ -92,7 +92,7 @@ int input_open(void) {
 	if (dev_name == NULL) {
 		logprintf("3unable to detect PMIC keys!");
 	} else {
-		snprintf(dev_path, sizeof(dev_path), "/dev/%s", dev_name);
+		snprintf(dev_path, sizeof(dev_path), "%s/%s", uinput_dir, dev_name);
 		free(dev_name);
 		logprintf("0trying to open PMIC keys at %s", dev_path);
 		if (!pmic_keys_open(dev_path))
