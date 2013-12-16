@@ -23,6 +23,11 @@
 #ifndef NSBOOT_MENUS_H
 #define NSBOOT_MENUS_H
 
+#include "input.h"
+
+#define BTN_CLICKED(label) (was_clicked(0, btn_y_ ## label, 1024, 44))
+#define BTN_HELD(label) (is_held(0, btn_y_ ## label, 1024, 44))
+#define BTN_LIFTED(label) (was_lifted(0, btn_y_ ## label, 1024, 44))
 
 #define START_LIST(list_x, list_y, help_x, colr1, colr2, colr3) \
 	int current_y = list_y - 48; \
@@ -32,7 +37,7 @@
 	uint32_t BG1COLR = colr1; \
 	uint32_t BG2COLR = colr2; \
 	uint32_t SELCOLR = colr3;
-
+	
 #define DECL_LINE(label) \
 	int btn_y_ ## label = -44;
 
@@ -40,14 +45,14 @@
 	do { \
 	 	USECOLR = !USECOLR; \
 		CURCOLR = USECOLR ? BG1COLR : BG2COLR; \
+		if (BTN_HELD(label)) \
+			CURCOLR = SELCOLR; \
 		current_y += 48; \
 		btn_y_ ## label = current_y; \
 		fill_rect(0, btn_y_ ## label, 1024, 44, CURCOLR); \
 		text(_txt, col1_x, btn_y_ ## label + 8, 2, 2, 0xFFFFFFFF, CURCOLR); \
 		text(_help, col2_x, btn_y_ ## label + 8, 1, 1, 0xFFFFFFFF, CURCOLR); \
 	} while (0);
-
-#define PRESSED(label) in_box(0, btn_y_ ## label, 1024, 44)
 
 #define DECL_TOGL(toglbl, state) \
 		DECL_LINE(toglbl); \
@@ -58,7 +63,7 @@
 		text(togl_ ## toglbl ? "on" : "off", col0_x, btn_y_ ## toglbl + 16, 1,1, 0xFFFFFFFF, CURCOLR);
 
 #define DO_TOGL(toglbl) \
-	if (PRESSED(toglbl)) togl_ ## toglbl = !togl_ ## toglbl;
+	if (BTN_CLICKED(toglbl)) togl_ ## toglbl = !togl_ ## toglbl;
 
 void main_menu(void);
 

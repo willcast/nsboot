@@ -51,6 +51,10 @@ int pmic_keys_usable = 0;
 int vibrator_fd;
 int vibrator_usable = 0;
 
+input_state last_input;
+input_state cur_input;
+input_state diff_input;
+
 int input_open(void) {
 	char dev_path[PATH_MAX];
 	char *dev_name = NULL;
@@ -101,7 +105,67 @@ int input_open(void) {
 		return 1;
 	}
 
+	memset(&last_input, 0, sizeof(last_input));
+	memset(&cur_input, 0, sizeof(last_input));
+	memset(&diff_input, 0, sizeof(last_input));
+
 	return 0;
+}
+
+void input_read(void) {
+	fd_set input_fds;
+	struct timeval tv;
+	int num_fds = 0;
+	int status;
+	FD_ZERO(&input_fds);
+
+	last_input = cur_input;
+
+	if (ts_usable) {
+		FD_SET(ts_fd, &input_fds);
+		num_fds = max(num_fds, ts_fd);
+	}
+	if (gpio_keys_usable) {
+		FD_SET(gpio_keys_fd, &input_fds);
+		num_fds = max(num_fds, gpio_keys_fd);
+	}
+	if (pmic_keys_usable) {
+		FD_SET(pmic_keys_fd, &input_fds);
+		num_fds = max(num_fds, pmic_keys_fd);
+	}
+
+	// these values directly affect the (minimum) frame rate
+	tv.tv_sec = 0;
+	tv.tv_usec = 50000;
+
+	status = select(num_fds, &input_fds, NULL, NULL, &tv);
+
+	if (!status) {
+		cur_input.timed_out = 1;
+	} else if (status == -1) {
+		logperror("select");
+		sleep(1);
+		return;
+	} else {
+		cur_input.timed_out = 0;
+	}
+
+	if (FD_ISSET(ts_fd, &input_fds))
+		ts_read(&cur_input.ts_x, &cur_input.ts_y, &cur_input.touch);
+	if (FD_ISSET(gpio_keys_fd, &input_fds))
+		gpio_keys_read(&cur_input.vol_up, &cur_input.vol_down,
+			&cur_input.center);
+	if (FD_ISSET(pmic_keys_fd, &input_fds))
+		pmic_keys_read(&cur_input.power);
+
+	diff_input.touch = last_input.touch && !cur_input.touch;
+	diff_input.vol_up = !last_input.vol_up && cur_input.vol_up;
+	diff_input.vol_down = !last_input.vol_down && cur_input.vol_down;
+	diff_input.center = !last_input.center && cur_input.center;
+	diff_input.power = !last_input.power && cur_input.power;
+
+	if (diff_input.touch)
+		vibrate(30);
 }
 
 void input_close(void) {
@@ -123,7 +187,7 @@ char * name_to_event_dev(char *match_name) {
 		return NULL;
 	}
 
-	sysfs_dir_entry = (DIR *)99;
+	sysfs_dir_entry = (struct dirent *)1;
 	while (sysfs_dir_entry != NULL) {
 		char name_file_path[PATH_MAX];
 		char cur_name[256];
@@ -162,20 +226,16 @@ int ts_open(char *dev_file) {
 	if (ts_fd < 0) {
 		logperror("error opening touchscreen event device");
 		return 1;
-	} else {
-		ts_usable = 1;
 	}
 
 	return 0;
 }
 
 int gpio_keys_open(char *dev_file) {
-	gpio_keys_fd = open(dev_file, O_WRONLY);
+	gpio_keys_fd = open(dev_file, O_RDONLY);
 	if (gpio_keys_fd < 0) {
 		logperror("error opening GPIO key event device");
 		return 1;
-	} else {
-		gpio_keys_usable = 1;
 	}
 
 	return 0;
@@ -186,8 +246,6 @@ int pmic_keys_open(char *dev_file) {
 	if (pmic_keys_fd < 0) {
 		logperror("error opening PMIC key event device");
 		return 1;
-	} else {
-		pmic_keys_usable = 1;
 	}
 
 	return 0;
@@ -229,18 +287,26 @@ void vibrator_close(void) {
 	}
 }
 
-
-void ts_read(int *x, int *y) {
-	int ts_x = -1, ts_y = -1;
-	int ts_touch = 0;
-	int ts_syn = 0;
-	int nbytes;
+void ts_read(int *x, int *y, int *touch) {
+	int got_syn;
+	size_t read_size;
 	struct input_event ev;
 
-	while ((!ts_syn) || (ts_x == -1) || (ts_y == -1) || (!ts_touch)) {
-		nbytes = read(ts_fd, &ev, sizeof(struct input_event));
-		if (nbytes != sizeof(struct input_event)) {
-			perror("error reading touchscreen (will retry)");
+	if (!ts_usable) {
+		*x = 0;
+		*y = 0;
+		*touch = 0;
+		return;
+	}
+
+	got_syn = 0;
+	while (!got_syn) {
+		read_size = read(ts_fd, &ev, sizeof(struct input_event));
+		if (read_size == -1) {
+			logperror("error reading touchscreen (retrying)");
+			continue;
+		} else if (read_size < sizeof(struct input_event)) {
+			logprintf("2short read on touchscreen (retrying");
 			continue;
 		}
 
@@ -248,54 +314,177 @@ void ts_read(int *x, int *y) {
 		case EV_SYN:
 			switch (ev.code) {
 			case SYN_REPORT:
-				ts_syn = 1;
+				got_syn = 1;
 				break;
 			default:
-				logprintf("0unknown code in EV_SYN event on touchscreen");
+				logprintf("0unknown input event, type EV_SYN "
+					"code %x, value %x, from touchscreen",
+					ev.code, ev.value);
+				break;
 			}
 			break;
 		
 		case EV_ABS:
 			switch (ev.code) {
 			case ABS_X:
-				ts_x = ev.value;
+				*x = ev.value;
 				break;
 			case ABS_Y:
-				ts_y = ev.value;
+				*y = ev.value;
 				break;
 			case ABS_PRESSURE:
 				break;
 			default:
-				logprintf("0unknown code in EV_ABS event on touchscreen");
+				logprintf("0unknown input event, type EV_ABS "
+					"code %x, value %x, from touchscreen",
+					ev.code, ev.value);
+				break;
 			}
 			break;
 
 		case EV_KEY:
 			switch (ev.code) {
 			case BTN_TOUCH:
-				ts_touch = ev.value;
+				*touch = ev.value;
 				break;
 			default:
-				logprintf("0unknown code in EV_KEY event on touchscreen");
+				logprintf("0unknown input event, type EV_KEY, "
+					"code %x, value %x, from touchscreen",
+					ev.code, ev.value);
 			}
 			break;
 
 		default:
-			logprintf("0unknown type in event on touchscreen");
+			logprintf("0unknown input event, type %x, code %x, "
+				"value %x, from touchscreen",
+				ev.type, ev.code, ev.value);
+			break;
 		}
 	}
-
-	vibrate(40);
-	usleep(50000);
-	*x = ts_x;
-	*y = ts_y;
 }
 
-void wait_touch(void) {
-	int dummy;
-	ts_read(&dummy, &dummy);
+void gpio_keys_read(int *vol_up, int *vol_down, int *center) {
+	struct input_event ev;
+	size_t read_size;
+	int got_syn;
+
+	if (!gpio_keys_usable) {
+		*vol_up = 0;
+		*vol_down = 0;
+		*center = 0;
+		return;
+	}
+
+	got_syn = 0;
+	while (!got_syn) {
+		read_size = read(gpio_keys_fd, &ev, sizeof(struct input_event));
+		if (read_size == -1) {
+			logperror("error reading gpio_keys (retrying)");
+			continue;
+		} else if (read_size < sizeof(struct input_event)) {
+			logprintf("2short read of gpio_keys (retrying)");
+			continue;
+		}
+
+		switch (ev.type) {
+		case EV_SYN:
+			switch (ev.code) {
+			case SYN_REPORT:
+				got_syn = 1;
+				break;
+			default:
+				logprintf("0unknown input event, type EV_SYN, "
+					"code %x, value %x, from gpio_keys",
+					ev.code, ev.value);
+				break;
+			}
+			break;
+
+		case EV_KEY:
+			switch (ev.code) {
+			case KEY_VOLUMEDOWN:
+				*vol_down = ev.value;
+				break;
+			case KEY_VOLUMEUP:
+				*vol_up = ev.value;
+				break;
+			case KEY_REPLY:
+				*center = ev.value;
+				break;
+			default:
+				logprintf("0unknown input event, type EV_KEY, "
+					"code %x, value %x, from gpio_keys",
+					ev.code, ev.value);
+				break;
+			}
+			break;
+	
+		default:
+			logprintf("0unknown input event, type %x, code %x, "
+				"value %x, from gpio_keys", ev.type, ev.code,
+				ev.value);
+			break;
+		}
+	}
 }
 
+void pmic_keys_read(int *power) {
+	struct input_event ev;
+	size_t read_size;
+	int got_syn;
+
+	if (!pmic_keys_usable) {
+		*power = 0;
+		return;
+	}
+
+	got_syn = 0;
+	while (!got_syn) {
+		read_size = read(pmic_keys_fd, &ev, sizeof(struct input_event));
+		if (read_size == -1) {
+			logperror("error reading pmic_keys (retrying)");
+			continue;
+		} else if (read_size < sizeof(struct input_event)) {
+			logprintf("2short read on pmic_keys (retrying)");
+			continue;
+		}
+
+		switch (ev.type) {
+		case EV_SYN:
+			switch (ev.code) {
+			case SYN_REPORT:
+				got_syn = 1;
+				break;
+			default:
+				logprintf("0unknown input event, type EV_SYN, "
+					"code %x, value %x, on pmic_keys",
+					ev.code, ev.value);
+				break;
+			}
+			break;
+
+		case EV_KEY:
+			switch (ev.code) {
+			case KEY_END:
+				*power = ev.value;
+				break;
+			default:
+				logprintf("0unknown input event, type EV_KEY, "
+					"code %x, value %x, on pmic_keys",
+					ev.code, ev.value);
+				break;
+			}
+			break;
+
+		default:
+			logprintf("0unknown input event, type %x, code %x, "
+				"value %x, on pmic_keys", ev.type, ev.code,
+				ev.value);
+			break;
+		}
+	}
+}
+	
 void vibrate(int ms) {
 	char str_ms[8];
 

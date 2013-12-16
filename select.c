@@ -51,7 +51,6 @@ int sel;
 //       matches
 char * select_file(enum filter_spec filtloc, char *filter) {
 	char *selected_file, str[256];
-	int ts_x, ts_y;
 	int npages, pagenum = 1;
 	const int perpage = PERPAGE - 1;
 
@@ -137,20 +136,20 @@ char * select_file(enum filter_spec filtloc, char *filter) {
 
 		while (sel == -1) {
 			update_screen();
-			ts_read(&ts_x, &ts_y);
+			input_read();
 
-			if (PRESSED(backbtn)) {
+			if (BTN_CLICKED(backbtn)) {
 				free(by);
 				free(kept);
 				return NULL;
 			}
 			for (int i = perpage * (pagenum - 1); i <= nkept; ++i)
-				if (in_box(0, by[i], 1024, 44))
+				if (was_clicked(0, by[i], 1024, 44))
 					sel = kept[i];
-			if (PRESSED(prevpage)) {
+			if (BTN_CLICKED(prevpage)) {
 				--pagenum;
 				break;
-			} else if (PRESSED(nextpage)) {
+			} else if (BTN_CLICKED(nextpage)) {
 				++pagenum;
 				break;
 			}
@@ -177,7 +176,6 @@ char * select_file(enum filter_spec filtloc, char *filter) {
 
 char * select_lv(int disable_android) {
 	int n;
-	int ts_x, ts_y;
 	int *by, pagenum = 1, npages, ret = 0;	
 	char *selected_lv = NULL, str[64];
 
@@ -221,17 +219,17 @@ char * select_lv(int disable_android) {
 		}
 
 		update_screen();
-		ts_read(&ts_x, &ts_y);
-		if (PRESSED(backbtn)) ret = 2;
+		input_read();
+		if (BTN_CLICKED(backbtn)) ret = 2;
 
 		for (int i = PERPAGE * (pagenum - 1); i < n; ++i)
-			if (in_box(0, by[i], 1024, 44)) {
+			if (was_clicked(0, by[i], 1024, 44)) {
 				if (i > pagenum * PERPAGE) break;
 				selected_lv = strdup(lv_name(i));
 				ret = 1;				
 			}
-		if (PRESSED(prevpage)) --pagenum;
-		else if (PRESSED(nextpage)) ++pagenum;
+		if (BTN_CLICKED(prevpage)) --pagenum;
+		else if (BTN_CLICKED(nextpage)) ++pagenum;
 	} while (!ret);
 	
 	free(by);
@@ -241,7 +239,6 @@ char * select_lv(int disable_android) {
 
 char * select_lv_set(void) {
 	int *by, pagenum = 1, npages;
-	int ts_x, ts_y;
 	int n, ret = 0;
 	char *selected_set = NULL;
 
@@ -279,17 +276,17 @@ char * select_lv_set(void) {
 		}
 
 		update_screen();
-		ts_read(&ts_x, &ts_y);
-		if (PRESSED(backbtn)) ret = 2;
+		input_read();
+		if (BTN_CLICKED(backbtn)) ret = 2;
 
 		for (int i = PERPAGE * (pagenum - 1); i < n; ++i)
-			if (in_box(0, by[i], 1024, 44)) {
+			if (was_clicked(0, by[i], 1024, 44)) {
 				if (i > pagenum * PERPAGE) break;
 				selected_set = strdup(lv_set_name(i));
 				ret = 1;				
 			}
-		if (PRESSED(prevpage)) --pagenum;
-		else if (PRESSED(nextpage)) ++pagenum;
+		if (BTN_CLICKED(prevpage)) --pagenum;
+		else if (BTN_CLICKED(nextpage)) ++pagenum;
 	} while (!ret);
 
 	free(by);
@@ -300,7 +297,6 @@ char * select_lv_set(void) {
 // 0 for false, 1 for true
 int confirm(const char *label) {
 	int ret = -1;
-	int ts_x, ts_y;
 	char str[64];
 
 	DECL_LINE(yesbtn);
@@ -324,16 +320,15 @@ int confirm(const char *label) {
 
 	while (ret == -1) {
 		update_screen();
-		ts_read(&ts_x, &ts_y);
+		input_read();
 
-		if (PRESSED(yesbtn)) ret = 1;
-		else if (PRESSED(nobtn)) ret = 0;
+		if (BTN_CLICKED(yesbtn)) ret = 1;
+		else if (BTN_CLICKED(nobtn)) ret = 0;
 	}
 	return ret;
 }
 
 void boot_menu(void) {
-	int ts_x, ts_y;
 	int npages, pagenum = 1;
 	int *by, ret = -1;
 	char helpstr[256];
@@ -379,17 +374,17 @@ void boot_menu(void) {
 
 		while (ret == -1) {
 			update_screen();
-			ts_read(&ts_x, &ts_y);
+			input_read();
 
-			if (PRESSED(backbtn)) ret = 1;
+			if (BTN_CLICKED(backbtn)) ret = 1;
 
 			for (int i = 0; i < menu_size; ++i) {
 				if (i > pagenum * PERPAGE) break;
-				if (in_box(0, by[i], 1024, 44))
+				if (was_clicked(0, by[i], 1024, 44))
 					boot_kexec(i);
 			}
-			if (PRESSED(nextpage)) ++pagenum;
-			else if (PRESSED(prevpage)) --pagenum;
+			if (BTN_CLICKED(nextpage)) ++pagenum;
+			else if (BTN_CLICKED(prevpage)) --pagenum;
 		}
 	} while (!ret);
 

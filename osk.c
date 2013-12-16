@@ -53,7 +53,6 @@ const char keyboard[4][4][14][2] = { {
 // returns the selected number
 // const char *prompt: message to display above input area.
 long num_input(const char *prompt) {
-	int ts_x, ts_y;
 	int done = 0, cur_ch = 0;
 	char buf[12];
 
@@ -94,22 +93,22 @@ long num_input(const char *prompt) {
 			0xFFFFFFFF,0xFF000000,0xFFFFFFFF);
 
 		update_screen();
-		ts_read(&ts_x, &ts_y);
+		input_read();
 
-		if (in_box(16, 174, 124, 124)) buf[cur_ch++] = '7';
-		else if (in_box(156, 192, 124, 124)) buf[cur_ch++] = '8';
-		else if (in_box(296, 192, 124, 124)) buf[cur_ch++] = '9';
-		else if (in_box(16, 332, 124, 124)) buf[cur_ch++] = '4';
-		else if (in_box(156, 332, 124, 124)) buf[cur_ch++] = '5';
-		else if (in_box(296, 332, 124, 124)) buf[cur_ch++] = '6';
-		else if (in_box(16, 472, 124, 124)) buf[cur_ch++] = '1';
-		else if (in_box(156, 472, 124, 124)) buf[cur_ch++] = '2';
-		else if (in_box(296, 472, 124, 124)) buf[cur_ch++] = '3';
-		else if (in_box(16, 612, 124, 124)) {
+		if (was_clicked(16, 174, 124, 124)) buf[cur_ch++] = '7';
+		else if (was_clicked(156, 192, 124, 124)) buf[cur_ch++] = '8';
+		else if (was_clicked(296, 192, 124, 124)) buf[cur_ch++] = '9';
+		else if (was_clicked(16, 332, 124, 124)) buf[cur_ch++] = '4';
+		else if (was_clicked(156, 332, 124, 124)) buf[cur_ch++] = '5';
+		else if (was_clicked(296, 332, 124, 124)) buf[cur_ch++] = '6';
+		else if (was_clicked(16, 472, 124, 124)) buf[cur_ch++] = '1';
+		else if (was_clicked(156, 472, 124, 124)) buf[cur_ch++] = '2';
+		else if (was_clicked(296, 472, 124, 124)) buf[cur_ch++] = '3';
+		else if (was_clicked(16, 612, 124, 124)) {
 			if ((buf[cur_ch] == '\0') && cur_ch) --cur_ch;
 			buf[cur_ch] = '\0';
-		} else if (in_box(156, 612, 124, 124)) buf[cur_ch++] = '0';
-		else if (in_box(296, 612, 124, 124)) done = 1;
+		} else if (was_clicked(156, 612, 124, 124)) buf[cur_ch++] = '0';
+		else if (was_clicked(296, 612, 124, 124)) done = 1;
 	}
 
 	return atol(buf);
@@ -167,10 +166,10 @@ char * text_input(const char *prompt) {
 			0xFF000000,0xFFFFFFFF,0xFF000000);
 
 		update_screen();
-		ts_read(&ts_x, &ts_y);
+		input_read();
 
 		for (int y = 0; y < 4; ++y) for (int x = 0; x < 14; ++x)
-			if (in_box((16+64*x), (384+64*y), 52,52) &&
+			if (was_clicked((16+64*x), (384+64*y), 52,52) &&
 				(keyboard[n][y][x][0] != '\0')) {
 					output[cur_ch] = keyboard[n][y][x][0];
 					++cur_ch;
@@ -178,16 +177,16 @@ char * text_input(const char *prompt) {
 					break;
 			}
 
-		if (in_box(912, 384, 52, 52)) {
+		if (was_clicked(912, 384, 52, 52)) {
 			if ((output[cur_ch] == '\0') && cur_ch) --cur_ch;
 			output[cur_ch] = '\0';
-		} else if (in_box(16, 512, 52, 52))
+		} else if (was_clicked(16, 512, 52, 52))
 			caps = !caps;
-		else if (in_box(784, 512, 116, 52))
+		else if (was_clicked(784, 512, 116, 52))
 			done = 1;
-		else if (in_box(16, 576, 116, 52) || in_box(784, 576, 116, 52))
+		else if (was_clicked(16, 576, 116, 52) || was_clicked(784, 576, 116, 52))
 			shift = !shift;
-		else if (in_box(208, 640, 448, 52))
+		else if (was_clicked(208, 640, 448, 52))
 			output[cur_ch++] = ' ';
 
 	}

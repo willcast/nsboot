@@ -42,7 +42,6 @@
 extern int sel;
 
 void main_menu(void) {
-	int ts_x, ts_y;
 	int _y = 48;
 	int quit = 0;
 	char *file1;
@@ -67,30 +66,29 @@ void main_menu(void) {
 		DRAW_LINE(utilitybutton, "utilities", "enter the utilities menu");
 
 		update_screen();
-		ts_read(&ts_x, &ts_y);
+		input_read();
 
-		if PRESSED(offbutton) {
+		if BTN_CLICKED(offbutton) {
 			logprintf("1powering off...");
 			sync();
 			reboot(RB_POWER_OFF);
 			quit = 1;
-		} else if PRESSED(rebootbutton) {
+		} else if BTN_CLICKED(rebootbutton) {
 			logprintf("1rebooting...");
 			sync();
 			reboot(RB_AUTOBOOT);
 			quit = 1;
-		} else if PRESSED(bootbutton) {
+		} else if BTN_CLICKED(bootbutton) {
 			boot_menu();
- 		} else if PRESSED(installbutton) {
+ 		} else if BTN_CLICKED(installbutton) {
 			installer_menu();
-		} else if PRESSED(utilitybutton) {
+		} else if BTN_CLICKED(utilitybutton) {
 			util_menu();
 		}
 	}
 }
 
 void installer_menu(void) {
-	int ts_x, ts_y;
 	int ret = 0;
 	char *filename;
 
@@ -116,15 +114,15 @@ void installer_menu(void) {
 		DRAW_LINE(replacebutton, "make nsboot default", "make sure all your OSes work with it first");
 
 		update_screen();
-		ts_read(&ts_x, &ts_y);
+		input_read();
 
-		if PRESSED(backbutton) ret = 1;
-		else if PRESSED(zipbutton) ret = zip_menu();
-		else if PRESSED(tgzbutton) ret = tgz_menu();
-		else if PRESSED(tarbutton) ret = tar_menu();
-		else if (PRESSED(replacebutton) && confirm("replace moboot"))
+		if BTN_CLICKED(backbutton) ret = 1;
+		else if BTN_CLICKED(zipbutton) ret = zip_menu();
+		else if BTN_CLICKED(tgzbutton) ret = tgz_menu();
+		else if BTN_CLICKED(tarbutton) ret = tar_menu();
+		else if (BTN_CLICKED(replacebutton) && confirm("replace moboot"))
 			replace_moboot();
-		else if PRESSED(uimgbutton) {
+		else if BTN_CLICKED(uimgbutton) {
 			filename = select_file(BASE, "uImage.");
 			if (filename == NULL) continue;
 			if (confirm("install uImage"))
@@ -137,7 +135,6 @@ int zip_menu(void) {
 	char *filename = NULL;
 	char *lv_set = NULL;
 	int ret = 0;
-	int ts_x, ts_y;
 	int flags;	
 
 	DECL_LINE(backbutton);
@@ -169,13 +166,13 @@ int zip_menu(void) {
 		DRAW_LINE(doit, "install now", "install the ZIP now");
 
 		update_screen();
-		ts_read(&ts_x, &ts_y);
+		input_read();
 
-		if PRESSED(backbutton) ret = 1;
-		else if PRESSED(homebutton) ret = 2;
-		else if PRESSED(selzip) filename = select_file(EXT, ".zip");
-		else if PRESSED(sellvset) lv_set = select_lv_set();
-		else if (PRESSED(doit) && (filename != NULL) && (lv_set != NULL)) {
+		if BTN_CLICKED(backbutton) ret = 1;
+		else if BTN_CLICKED(homebutton) ret = 2;
+		else if BTN_CLICKED(selzip) filename = select_file(EXT, ".zip");
+		else if BTN_CLICKED(sellvset) lv_set = select_lv_set();
+		else if (BTN_CLICKED(doit) && (filename != NULL) && (lv_set != NULL)) {
 			flags = togl_wipesys * WIPE_SYSTEM +
 					togl_wipedat * WIPE_DATA + 
 					togl_wipecac * WIPE_CACHE;
@@ -193,7 +190,6 @@ int tgz_menu(void) {
 	char *filename = NULL;
 	char *lv = NULL;
 	int ret = 0;
-	int ts_x, ts_y;
 
 	DECL_LINE(backbutton);
 	DECL_LINE(homebutton);
@@ -218,13 +214,13 @@ int tgz_menu(void) {
 		DRAW_LINE(doit, "install now", "install the tarchive now");
 
 		update_screen();
-		ts_read(&ts_x, &ts_y);
+		input_read();
 
-		if PRESSED(backbutton) ret = 1;
-		else if PRESSED(homebutton) ret = 2;
-		else if PRESSED(seltgz) filename = select_file(EXT, ".gz");
-		else if PRESSED(sellv) lv = select_lv(0);
-		else if (PRESSED(doit) && (filename != NULL))
+		if BTN_CLICKED(backbutton) ret = 1;
+		else if BTN_CLICKED(homebutton) ret = 2;
+		else if BTN_CLICKED(seltgz) filename = select_file(EXT, ".gz");
+		else if BTN_CLICKED(sellv) lv = select_lv(0);
+		else if (BTN_CLICKED(doit) && (filename != NULL))
 			install_native(filename, lv, -1);
 
 		DO_TOGL(wipe);
@@ -236,7 +232,6 @@ int tar_menu(void) {
 	char *filename = NULL;
 	char *lv = NULL;
 	int ret = 0;
-	int ts_x, ts_y;
 
 	DECL_LINE(backbutton);
 	DECL_LINE(homebutton);
@@ -258,20 +253,19 @@ int tar_menu(void) {
 		DRAW_LINE(doit, "install now", "install the kexec tarchive now");
 
 		update_screen();
-		ts_read(&ts_x, &ts_y);
+		input_read();
 
-		if PRESSED(backbutton) ret = 1;
-		else if PRESSED(homebutton) ret = 2;
-		else if PRESSED(seltar) filename = select_file(EXT, ".tar");
-		else if PRESSED(sellv) lv = select_lv(0);
-		else if (PRESSED(doit) && (filename != NULL))
+		if BTN_CLICKED(backbutton) ret = 1;
+		else if BTN_CLICKED(homebutton) ret = 2;
+		else if BTN_CLICKED(seltar) filename = select_file(EXT, ".tar");
+		else if BTN_CLICKED(sellv) lv = select_lv(0);
+		else if (BTN_CLICKED(doit) && (filename != NULL))
 			install_tar(filename, lv);
 	}
 	return (ret & 2);
 }
 
 void util_menu(void) {
-	int ts_x, ts_y;
 	int ret = 0;
 	char *file = NULL;
 
@@ -297,13 +291,13 @@ void util_menu(void) {
 		DRAW_LINE(filebutton, "files", "enter the file browser");
 
 		update_screen();
-		ts_read(&ts_x, &ts_y);
+		input_read();
 
-		if (PRESSED(backbutton)) ret = 1;
-		else if (PRESSED(lvbutton)) ret = lv_menu();
-		else if (PRESSED(lvsetbutton)) ret = lv_set_menu();
-		else if (PRESSED(miscbutton)) ret = misc_menu();
- 		else if PRESSED(filebutton) {
+		if (BTN_CLICKED(backbutton)) ret = 1;
+		else if (BTN_CLICKED(lvbutton)) ret = lv_menu();
+		else if (BTN_CLICKED(lvsetbutton)) ret = lv_set_menu();
+		else if (BTN_CLICKED(miscbutton)) ret = misc_menu();
+ 		else if BTN_CLICKED(filebutton) {
 			file = select_file(ANY, NULL);
 			if (file == NULL) continue;
 			task_menu(file);
@@ -312,7 +306,6 @@ void util_menu(void) {
 }
 
 int lv_menu(void) {
-	int ts_x, ts_y;
 	int ret = 0;
 	long size;
 	char *lv, *name, str[256];
@@ -351,45 +344,45 @@ int lv_menu(void) {
 		DRAW_LINE(resizebutton, "resize volume", "resize the a volume (along with its filesystem)");
 
 		update_screen();
-		ts_read(&ts_x, &ts_y);
+		input_read();
 
-		if PRESSED(backbutton) ret = 1;
-		else if PRESSED(homebutton) ret = 2;
-		else if (PRESSED(createbutton)) {
+		if BTN_CLICKED(backbutton) ret = 1;
+		else if BTN_CLICKED(homebutton) ret = 2;
+		else if (BTN_CLICKED(createbutton)) {
 			lv = text_input("enter volume name - example: arch-root");
 			if ((lv == NULL) || (lv[0] == '\0')) continue;
 			size = size_screen("enter size of  new volume", 8, 65536);
 			if (confirm("create volume")) new_lv(lv, size);
 			free(lv);		
-		} else if (PRESSED(deletebutton)) {
+		} else if (BTN_CLICKED(deletebutton)) {
 			lv = select_lv(1);
 			if (lv == NULL) continue;
 			if (confirm("delete volume")) delete_lv(lv);
-		} else if (PRESSED(fmtbutton)) {
+		} else if (BTN_CLICKED(fmtbutton)) {
 			lv = select_lv(1);
 			if (lv == NULL) continue;
 			if (confirm("format volume")) wipe_lv(lv);
-		} else if (PRESSED(	chkbutton)) {
+		} else if (BTN_CLICKED(	chkbutton)) {
 			lv = select_lv(0);
 			if (lv == NULL) continue;
 			if (confirm("check volume - system may reboot on its own")) check_lv(lv);
-		} else if (PRESSED(backupbutton)) {
+		} else if (BTN_CLICKED(backupbutton)) {
 			lv = select_lv(0);
 			if (lv == NULL) continue;
 			name = text_input("Enter the name for your backup:");
 			if ((name == NULL) || (name[0] == '\0')) continue;
 			if (confirm("backing up takes > 5 min")) lv_to_tgz(lv, name);
 			free(name);
-		} else if (PRESSED(restorebutton)) tgz_menu();
-		else if (PRESSED(mntbutton)) {
+		} else if (BTN_CLICKED(restorebutton)) tgz_menu();
+		else if (BTN_CLICKED(mntbutton)) {
 			lv = select_lv(0);
 			if (lv == NULL) continue;
 			mount_lv(lv);
-		} else if (PRESSED(umntbutton)) {
+		} else if (BTN_CLICKED(umntbutton)) {
 			lv = select_lv(0);
 			if (lv == NULL) continue;
 			umount_lv(lv);
-		} else if (PRESSED(resizebutton)) {
+		} else if (BTN_CLICKED(resizebutton)) {
 			lv = select_lv(0);
 			if (lv == NULL) continue;
 			snprintf(str, sizeof(str), "volume %s current size %ld MiB", lv, get_lv_size(lv));
@@ -401,7 +394,6 @@ int lv_menu(void) {
 }
 
 int lv_set_menu(void) {
-	int ts_x, ts_y;
 	int ret = 0;
 	long sys, dat, cac;
 	char *lv_set;
@@ -431,11 +423,11 @@ int lv_set_menu(void) {
 		DRAW_LINE(resizebutton, "resize volume", "resize the a volume set (along with its filesystems)");
 
 		update_screen();
-		ts_read(&ts_x, &ts_y);
+		input_read();
 
-		if PRESSED(backbutton) ret = 1;
-		else if PRESSED(homebutton) ret = 2;
-		else if (PRESSED(createbutton)) {
+		if BTN_CLICKED(backbutton) ret = 1;
+		else if BTN_CLICKED(homebutton) ret = 2;
+		else if (BTN_CLICKED(createbutton)) {
 			lv_set = text_input("enter volume set name - example: android42");
 			if ((lv_set == NULL) || (lv_set[0] == '\0')) continue;
 			sys = size_screen("for system volume", 240, 640);
@@ -443,15 +435,15 @@ int lv_set_menu(void) {
 			cac = size_screen("for cache volume", 160, 256);
 			if (confirm("create volume set")) new_lv_set(lv_set, sys, dat, cac);
 			free(lv_set);
-		} else if (PRESSED(deletebutton)) {
+		} else if (BTN_CLICKED(deletebutton)) {
 			lv_set = select_lv_set();
 			if (lv_set == NULL) continue;
 			if (confirm("delete volume set")) delete_lv_set(lv_set);
-		} else if (PRESSED(fmtbutton)) {
+		} else if (BTN_CLICKED(fmtbutton)) {
 			lv_set = select_lv_set();
 			if (lv_set == NULL) continue;
 			if (confirm("format volume set")) wipe_lv_set(lv_set);
-		} else if (PRESSED(mntbutton)) {
+		} else if (BTN_CLICKED(mntbutton)) {
 			lv_set = select_lv_set();
 			if (lv_set == NULL) continue;
 			mount_lv_set(lv_set);
@@ -461,7 +453,6 @@ int lv_set_menu(void) {
 }
 
 int misc_menu(void) {
-	int ts_x, ts_y;
 	int ret = 0, code, bright;
 	char *cmd, *name;
 	char pwd[PATH_MAX];
@@ -487,11 +478,11 @@ int misc_menu(void) {
 		DRAW_LINE(setbright, "brightness", "set the brightness of the LCD");
 
 		update_screen();
-		ts_read(&ts_x, &ts_y);
+		input_read();
 
-		if (PRESSED(backbutton)) ret = 1;
-		else if (PRESSED(homebutton)) ret = 2;
-		else if (PRESSED(shellcmd)) {
+		if (BTN_CLICKED(backbutton)) ret = 1;
+		else if (BTN_CLICKED(homebutton)) ret = 2;
+		else if (BTN_CLICKED(shellcmd)) {
 			if (getcwd(pwd, PATH_MAX) == NULL) {
 				logperror("can't getcwd");
 				continue;
@@ -500,15 +491,15 @@ int misc_menu(void) {
 			if ((cmd == NULL) || (cmd[0] == '\0')) continue;
 			system_logged(cmd);
 			free(cmd);
-		} else if (PRESSED(displog)) display_wholelog();
-		else if (PRESSED(dumplog)) {
+		} else if (BTN_CLICKED(displog)) display_wholelog();
+		else if (BTN_CLICKED(dumplog)) {
 			name = text_input("please enter log name:");
 			if ((name == NULL) || (name[0] == '\0')) continue;
 			mount_lv("media");
 			mkdir("/mnt/media/nsboot/logs/", 0755);
 			snprintf(pwd, sizeof(pwd), "/mnt/media/nsboot/logs/%s.log", name);
 			dump_log_to_file(pwd);	
-		} else if (PRESSED(setbright)) {
+		} else if (BTN_CLICKED(setbright)) {
 			bright = size_screen("set LCD brightness (4-255)", 4, 255);
 			set_brightness(bright);
 		}
@@ -517,7 +508,6 @@ int misc_menu(void) {
 }
 
 void info_screen(void) {
-	int ts_x, ts_y;
 	int ret = 0;
 	char date_str[128], battery_str[32];
 	long charge_full, charge_now;
@@ -558,15 +548,14 @@ void info_screen(void) {
 		text_box("back", 16,282, 160,70, 3, 0xFFFFFFFF,0xFF808080,0xFFFFFFFF);
 
 		update_screen();
-		ts_read(&ts_x, &ts_y);
+		input_read();
 
-		if (in_box(16, 249, 160, 70)) ret = 1;
+		if (was_clicked(16, 249, 160, 70)) ret = 1;
 	}
 }
 
 void task_menu(const char *file1) {
 	char *file2, *slash;
-	int ts_x, ts_y;
 	int done = 0, mode;
 
 	mode = file_mode(sel);
@@ -649,13 +638,13 @@ void task_menu(const char *file1) {
 			(mode & 04000) ? 0xFF000000 : 0xFFFFFFFF);
 
 		update_screen(); 
-		ts_read(&ts_x, &ts_y);
+		input_read();
 
-		if (in_box(16, 148, 232, 88)) done = 1;
-		else if (in_box(264, 148, 160, 88)) {
+		if (was_clicked(16, 148, 232, 88)) done = 1;
+		else if (was_clicked(264, 148, 160, 88)) {
 			chmod(file1, mode);
 			done = 1;
-		} else if (in_box(16, 252, 259, 70)) {
+		} else if (was_clicked(16, 252, 259, 70)) {
 			file2 = select_file(ANY, NULL);
 			if (file2 == NULL) return;
 			if (confirm("move file - files maybe be overwritten")) {
@@ -665,7 +654,7 @@ void task_menu(const char *file1) {
 				move_file(file1, file2);
 			}
 			done = 1;
- 		} else if (in_box(291, 252, 313, 70)) {
+ 		} else if (was_clicked(291, 252, 313, 70)) {
 			do {
 				file2 = text_input("enter new name:");
 				slash = strchr(file2, '/');
@@ -678,7 +667,7 @@ void task_menu(const char *file1) {
 				move_file(file1, file2);
 			free(file2);
 			done = 1;
-		} else if (in_box(16, 338, 259, 70)) {
+		} else if (was_clicked(16, 338, 259, 70)) {
 			file2 = select_file(ANY, NULL);
 			if (file2 == NULL) return;
 
@@ -688,10 +677,10 @@ void task_menu(const char *file1) {
 
 				copy_file(file1, file2);
 			}
-		} else if (in_box(291, 338, 313, 70) && confirm("delete file permanently")) {
+		} else if (was_clicked(291, 338, 313, 70) && confirm("delete file permanently")) {
 			delete_file(file1);
 			done = 1;
-		} else if (in_box(16, 424, 394, 70)) {
+		} else if (was_clicked(16, 424, 394, 70)) {
 			do {
 				file2 = text_input("enter directory name:");
 				slash = strchr(file2, '/');
@@ -703,18 +692,18 @@ void task_menu(const char *file1) {
 			mkdir(file2, 0755);
 			logprintf("0%s", "directory %s created with mode 0755", file2);
 			free(file2);
-		} else if (in_box(176, 500, 88, 52)) mode ^= 00400;
-		else if (in_box(276, 500, 106, 52))  mode ^= 00200;
-		else if (in_box(398, 500, 142, 52))  mode ^= 00100;
-		else if (in_box(176, 570, 88, 52))   mode ^= 00040;
-		else if (in_box(276, 570, 106, 52))  mode ^= 00020;
-		else if (in_box(398, 570, 142, 52))  mode ^= 00010;
-		else if (in_box(176, 640, 88, 52))   mode ^= 00004;
-		else if (in_box(276, 640, 106, 52))  mode ^= 00002;
-		else if (in_box(398, 640, 142, 52))  mode ^= 00001;
-		else if (in_box(158, 710, 142, 52))  mode ^= 01000;
-		else if (in_box(316, 710, 142, 52))  mode ^= 02000;
-		else if (in_box(474, 710, 142, 52))  mode ^= 04000;
+		} else if (was_clicked(176, 500, 88, 52)) mode ^= 00400;
+		else if (was_clicked(276, 500, 106, 52))  mode ^= 00200;
+		else if (was_clicked(398, 500, 142, 52))  mode ^= 00100;
+		else if (was_clicked(176, 570, 88, 52))   mode ^= 00040;
+		else if (was_clicked(276, 570, 106, 52))  mode ^= 00020;
+		else if (was_clicked(398, 570, 142, 52))  mode ^= 00010;
+		else if (was_clicked(176, 640, 88, 52))   mode ^= 00004;
+		else if (was_clicked(276, 640, 106, 52))  mode ^= 00002;
+		else if (was_clicked(398, 640, 142, 52))  mode ^= 00001;
+		else if (was_clicked(158, 710, 142, 52))  mode ^= 01000;
+		else if (was_clicked(316, 710, 142, 52))  mode ^= 02000;
+		else if (was_clicked(474, 710, 142, 52))  mode ^= 04000;
 	}
 	chmod(file1, mode);
 }

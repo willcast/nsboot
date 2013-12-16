@@ -66,15 +66,19 @@ void display_logbar(void) {
 	char *str;
 	int loglevel = 0, logindex = 0;
 
-	if (is_fb_available()) for (int i = 0; i < 16; ++i) {
-		logindex = loglist->used - 16 + i;
-		if (logindex < 0) continue;
-		loglevel = (int)strtol(loglist->data[logindex], &str, 10);
-		if (str == NULL) continue;
-		if (loglevel < 0) loglevel = 0;
-		else if (loglevel > 3) loglevel = 3;
-		fill_rect(0, FBHEIGHT - 256 + i*16, FBWIDTH, 16, logpalette[loglevel]);
-		text(str, 0, FBHEIGHT - 256 + i*16, 1, 1, 0xFFFFFFFF, logpalette[loglevel]);
+	if (is_fb_available()) {
+		for (int i = 0; i < 16; ++i) {
+			logindex = loglist->used - 16 + i;
+			if (logindex < 0) continue;
+			loglevel = (int)strtol(loglist->data[logindex], &str, 10);
+			if (str == NULL) continue;
+			if (loglevel < 0) loglevel = 0;
+			else if (loglevel > 3) loglevel = 3;
+			fill_rect(0, FBHEIGHT - 256 + i*16, FBWIDTH, 16, logpalette[loglevel]);
+			text(str, 0, FBHEIGHT - 256 + i*16, 1, 1, 0xFFFFFFFF, logpalette[loglevel]);
+		}
+	
+		update_screen();
 	} else
 		fprintf(stderr, "%s\n", loglist->data[loglist->used-1]+1);
 }
@@ -82,28 +86,61 @@ void display_logbar(void) {
 void display_wholelog(void) {
 	char *str;
 	int loglevel = 0, logindex = 0;
-	int start = 0;
-	if (is_fb_available()) while (start < loglist->used) {
-		clear_screen();
+	if (is_fb_available()) {
+		int start = 0;
+		int done = 0;
+		const int lines_per_page = FBHEIGHT / 16 - 3;
+		const int button_scroll = 16;
 
-		for (int i = 0; i < FBHEIGHT / 16; ++i) {
-			logindex = start + i;
-			if (logindex >= loglist->used) break;
-			if (loglist->data[logindex] == NULL) continue;
+		strcpy(sbstr, "log viewer");
 
-			loglevel = (int)strtol(loglist->data[logindex], &str, 10);
-			if (str == NULL) continue;
-			if (loglevel < 0) loglevel = 0;
-			else if (loglevel > 3) loglevel = 3;
-			fill_rect(0, i*16, FBWIDTH, 16, logpalette[loglevel]);
-			text(str, 0, i*16, 1, 1, 0xFFFFFFFF, logpalette[loglevel]);
+		while (!done) {	
+			clear_screen();
+
+			for (int i = 0; i < lines_per_page; ++i) {
+				logindex = start + i;
+				if (logindex >= loglist->used) break;
+				if (loglist->data[logindex] == NULL) continue;
+	
+				loglevel = (int)strtol(loglist->data[logindex], &str, 10);
+				if (str == NULL) continue;
+				if (loglevel < 0) loglevel = 0;
+				else if (loglevel > 3) loglevel = 3;
+				fill_rect(0, i*16+48, FBWIDTH, 16, logpalette[loglevel]);
+				text(str, 0, i*16+48, 1, 1, 0xFFFFFFFF, logpalette[loglevel]);
+			}	
+
+			update_screen();	
+			input_read();
+
+			if (diff_input.vol_up) {
+				if (start >= button_scroll) {
+					start -= button_scroll;
+				} else {
+					vibrate(40);
+				}
+			}
+			if (diff_input.vol_down) {
+				if (start < loglist->used - button_scroll) {
+					start += button_scroll;
+				} else {
+					vibrate(40);
+				}
+			}
+			if (diff_input.touch) {
+				if (start < loglist->used - lines_per_page) {
+					start += lines_per_page;
+				} else {
+					done = 1;
+				}
+			}
+			if (diff_input.center)
+				done = 1;
 		}
-		start += FBHEIGHT / 16;
-
-		update_screen();
-		wait_touch();
-	} else for (int i = 0; i < loglist->used; ++i)
-		fprintf(stderr, "%s\n", loglist->data[i]+1);
+	} else {
+		for (int i = 0; i < loglist->used; ++i)
+			fprintf(stderr, "%s\n", loglist->data[i]+1);
+	}
 }
 
 void dump_log_to_file(const char *path) {
