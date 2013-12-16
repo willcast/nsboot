@@ -333,6 +333,7 @@ void ts_read(int *x, int *y, int *touch) {
 				*y = ev.value;
 				break;
 			case ABS_PRESSURE:
+			case ABS_TOOL_WIDTH:
 				break;
 			default:
 				logprintf("0unknown input event, type EV_ABS "
