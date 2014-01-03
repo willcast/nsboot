@@ -42,7 +42,7 @@ const char *keepable_args[] = { "fbcon=e", "klog=", "klog_len=",
 
 char *kept_cmdline;
 
-struct boot_item *menu = NULL;
+boot_item *menu = NULL;
 int menu_size = 0;
 
 void parse_proc_cmdline(void) {
@@ -114,7 +114,7 @@ void read_kb_file_from(char *lv) {
 		return;
 	}
 
-	struct boot_item *entry = NULL;
+	boot_item *entry = NULL;
 	int line_num = 1;
 	while (!(feof(cfg_fp) || ferror(cfg_fp))) {
 		char *start;
@@ -195,7 +195,7 @@ void read_kb_file_from(char *lv) {
 }
 
 void free_boot_items(void) {
-	struct boot_item *item;
+	boot_item *item;
 
 	for (int i = 0; i < menu_size - 1; ++i) {
 		item = menu + i;
@@ -209,11 +209,11 @@ void free_boot_items(void) {
 	free(menu);
 }
 
-struct boot_item * add_boot_item(char *item_label) {
-	struct boot_item *new_menu, *new_item;
+boot_item * add_boot_item(char *item_label) {
+	boot_item *new_menu, *new_item;
 	++menu_size;
 
-	new_menu = realloc(menu, menu_size * sizeof(struct boot_item));
+	new_menu = realloc(menu, menu_size * sizeof(boot_item));
 	if (new_menu == NULL) {
 		logperror("can't allocate for new boot menu");
 		return NULL;
@@ -247,7 +247,7 @@ void scan_boot_lvs(void) {
 void boot_kexec(int entry_num) {
 	char cmd[1024];
 	int code;
-	struct boot_item *entry = menu + entry_num;
+	boot_item *entry = menu + entry_num;
 
 	if (entry->kernel == NULL) {
 		logprintf("2no kernel specified!");
@@ -257,7 +257,7 @@ void boot_kexec(int entry_num) {
 	mount_lv(entry->cfgdev);
 	sysprintf("mount -o remount,ro %s", entry->cfgdev);
 
-	strcpy(cmd, "kexec --load-hardboot --mem-min=0x48000000 --mem-max=0x4FFFFFFF ");
+	strcpy(cmd, "kexec --load-hardboot --mem-min=0x42000000 ");
 	if (entry->initrd != NULL) {
 		strcat(cmd, " --initrd='");
 		strcat(cmd, entry->initrd);

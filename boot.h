@@ -25,16 +25,16 @@
 
 #define PROC_CMDLINE_MAX 512
 
-struct boot_item {
+typedef struct {
 	char *label;
 	char *cfgdev;
 	char *kernel;
 	char *initrd;
 	char *append;
 	int prio;
-};
+} boot_item;
 
-struct boot_item * add_boot_item(char *);
+boot_item * add_boot_item(char *);
 
 void parse_proc_cmdline(void);
 void check_keep_arg(char *);

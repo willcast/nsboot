@@ -30,7 +30,7 @@
 #include "osk.h"
 #include "boot.h"
 
-extern struct boot_item *menu;
+extern boot_item *menu;
 extern int menu_size;
 int sel;
 
@@ -356,7 +356,7 @@ void boot_menu(void) {
 		}
 
 		for (int i = PERPAGE * (pagenum - 1); i < menu_size; ++i) {
-			struct boot_item *cur_item = menu + i; 
+			boot_item *cur_item = menu + i; 
 
 			if (i > pagenum * PERPAGE) break;
 
