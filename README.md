@@ -1,6 +1,7 @@
 *Ninja Swag* Touch Bootloader
 =============================
 For HP TouchPad (aka: topaz, tenderloin). Enables Extreme Multibooting.
+*Now tested on 64GiB (Albino) TouchPads.*
 
 Features
 ========
@@ -70,8 +71,8 @@ Kernel information
 ------------------
 The kernel used is a modified version of Linux 2.6.35. You can find the
 source at http://github.com/willcast/ubuntu_kernel_tenderloin. You'll have
-to check out the "kexec" branch, not the default one, and configure with
-with the "tenderloin_willcast_defconfig".
+to check out the "nsboot" branch, not the default one, and configure with
+with the "tenderloin_nsboot_defconfig".
 
 Build instructions
 ------------------
@@ -88,16 +89,19 @@ mode, and:
 (Obviously, you can only do that when you're cross compiling, which is why
 that's the best method.)
 
-To "push" (install) the built nsboot uImage onto the boot partition...
-...when at the nsboot menu:
+To "push" (install) the built nsboot uImage onto the boot partition
+when at the nsboot menu:
     make push_nsboot
-...when running a compatible* Android ROM
+    
+when running a compatible* Android ROM
     make push_android
-...when running a compatible* Android recovery
+    
+when running a compatible* Android recovery
     make push_android_recovery
-...when running a compatible* desktop Linux port
+    
+when running a compatible* desktop Linux port
     make push_linux
-
+    
 * just try it, if there are errors, then it's incompatible.
 
 External programs used in the image:
