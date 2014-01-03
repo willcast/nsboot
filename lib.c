@@ -134,7 +134,7 @@ void cp_file(const char *src, const char *dest) {
 		return;
 	}
 
-	dest_fd = open(dest, O_WRONLY);
+	dest_fd = open(dest, O_WRONLY|O_CREAT|O_TRUNC);
 	if (dest_fd < 0) {
 		logperror("2can't open destination file");
 		close(src_fd);
